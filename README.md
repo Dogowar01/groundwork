@@ -16,7 +16,10 @@ mistakes are visible years before they happen in the ground.
 3. **Plant** — a searchable catalogue of ~60 species suited to cool-temperate Tasmania
    (natives, exotics, fruit, hedging, perennials), each with its real mature spread.
    A ghost circle previews the footprint before you commit.
-4. **Measure** anywhere — distances reported on plan and, with a slope set, along the ground.
+4. **Draw** — trace your boundary, house, paths, lawn, beds and water as polygons with
+   live areas (order turf and mulch straight off the plan). Segment lengths show while
+   you trace; drag handles to adjust; `Shift` snaps to 0.5 m.
+5. **Measure** anywhere — distances reported on plan and, with a slope set, along the ground.
 
 Undo/redo, PNG export with an architect's title block, and everything autosaves locally.
 Single-file, offline-first PWA — no accounts, no server, your plan never leaves the browser.

@@ -143,6 +143,12 @@
   }
   #toolbar input[type=range]{width:64px;accent-color:var(--accent)}
   #opacityWrap{display:none}
+  .zoneRow{
+    display:none;flex-basis:100%;justify-content:center;gap:2px;flex-wrap:wrap;
+    padding-top:5px;margin-top:4px;border-top:1px solid var(--paper-edge);
+  }
+  .zoneRow.show{display:flex}
+  .zchip{width:9px;height:9px;border-radius:2px;border:1px solid;flex:0 0 auto}
 
   #paletteToggle{
     display:none;position:fixed;top:14px;left:12px;z-index:30;
@@ -222,7 +228,8 @@
       <b>Click</b> to plant · drag to move · right-click removes ·
       scroll zooms · drag ground pans.<br>
       <kbd>Ctrl</kbd>+<kbd>V</kbd> pastes an aerial photo, then <b>Calibrate</b>
-      two ends of a known length. Circles are <b>real mature spread</b> —
+      two ends of a known length. <b>Draw</b> traces boundary, house, lawn
+      &amp; beds with live m². Circles are <b>real mature spread</b> —
       overlaps are future crowding.
     </div>
   </div>
@@ -234,6 +241,8 @@
       <svg viewBox="0 0 24 24"><path d="M3 17 17 3l4 4L7 21zm4-6 2 2m1-5 2 2m1-5 2 2"/></svg>measure</button>
     <button data-mode="calibrate" title="Calibrate — set the scale from a known length (C)">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>calibrate</button>
+    <button data-mode="draw" title="Draw zones — boundary, house, paths, lawn, beds (D)">
+      <svg viewBox="0 0 24 24"><path d="M12 3 21 10l-3.5 10h-11L3 10z"/><circle cx="12" cy="3" r="1.4" fill="currentColor"/><circle cx="21" cy="10" r="1.4" fill="currentColor"/><circle cx="3" cy="10" r="1.4" fill="currentColor"/></svg>draw</button>
     <div class="sep"></div>
     <button id="loadBtn" title="Load an aerial image (or just Ctrl+V a screenshot)">
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 3 3 4-4 4 4"/></svg>aerial</button>
@@ -249,6 +258,7 @@
     <button id="zoomIn" title="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
     <button id="exportBtn" title="Export the plan as a PNG">
       <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg></button>
+    <div class="zoneRow" id="zoneRow"></div>
   </div>
 
   <div id="readout"></div>
@@ -353,10 +363,23 @@ const CATALOGUE=[
   {cat:"Perennials & groundcover", name:"Seaside daisy",      bot:"Erigeron karvinskianus",spread:0.6,hue:"#b0a2a8"},
 ];
 
+/* ================================================================ zones */
+const ZS={
+  boundary:{label:"boundary", color:"#322d24", fill:"none",                dash:"11 6", width:1.8},
+  structure:{label:"house",   color:"#5a5142", fill:"#e8dfc8", fillOp:1,   hatch:true,  width:1.4},
+  path:{label:"path",         color:"#8a7a5c", fill:"#ddd0ad", fillOp:.9,  width:1},
+  lawn:{label:"lawn",         color:"#7a9455", fill:"#a8bd7f", fillOp:.38, width:1},
+  bed:{label:"bed",           color:"#96703f", fill:"#b08a5e", fillOp:.3,  width:1},
+  water:{label:"water",       color:"#5d87a0", fill:"#7fa3b5", fillOp:.38, width:1},
+};
+
 /* ================================================================ state */
 const view={ox:300, oy:130, ppm:26};
 let plants=[];
 let measurements=[];
+let zones=[];                 // {type, pts:[{x,y}(m)]}
+let drawing=null;             // in-progress vertex list
+let drawType="boundary";
 let underlay=null;
 let mode="plant";
 let pending=null;
@@ -373,23 +396,24 @@ const rad=d=>d*Math.PI/180;
 
 /* ================================================================ history */
 let history=[],future=[];
+const stateStr=()=>JSON.stringify({plants,measurements,zones});
 function snapshot(){
-  history.push(JSON.stringify({plants,measurements}));
+  history.push(stateStr());
   if(history.length>60)history.shift();
   future=[];updateHistoryButtons();
 }
 function restore(str){
-  const d=JSON.parse(str);plants=d.plants;measurements=d.measurements;
+  const d=JSON.parse(str);plants=d.plants;measurements=d.measurements;zones=d.zones||[];
   render();saveSoon();
 }
 function undo(){
   if(!history.length)return;
-  future.push(JSON.stringify({plants,measurements}));
+  future.push(stateStr());
   restore(history.pop());updateHistoryButtons();
 }
 function redo(){
   if(!future.length)return;
-  history.push(JSON.stringify({plants,measurements}));
+  history.push(stateStr());
   restore(future.pop());updateHistoryButtons();
 }
 function updateHistoryButtons(){
@@ -403,7 +427,7 @@ const OLD_KEY="siteplan.pinetree.v1";
 let saveTimer=null;
 function saveSoon(){clearTimeout(saveTimer);saveTimer=setTimeout(save,600);}
 function save(){
-  const data={plants,measurements,view,planTitle,underlay:underlay?{...underlay}:null};
+  const data={plants,measurements,zones,view,planTitle,underlay:underlay?{...underlay}:null};
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(data));}
   catch(e){
     if(data.underlay)data.underlay={...data.underlay,dataURL:null};
@@ -419,7 +443,7 @@ function load(){
     }
     const d=JSON.parse(raw);
     if(!d)return false;
-    plants=d.plants||[];measurements=d.measurements||[];
+    plants=d.plants||[];measurements=d.measurements||[];zones=d.zones||[];
     Object.assign(view,d.view||{});
     planTitle=d.planTitle||"";
     document.getElementById("planTitle").value=planTitle;
@@ -461,13 +485,30 @@ document.getElementById("paletteToggle").onclick=()=>document.getElementById("pa
 
 /* ================================================================ toolbar */
 function setMode(m){
-  mode=m;pending=null;pendingCal=null;hideCalDialog();
+  mode=m;pending=null;pendingCal=null;drawing=null;hideCalDialog();
   document.querySelectorAll("#toolbar button[data-mode]").forEach(b=>
     b.classList.toggle("active",b.dataset.mode===m));
+  document.getElementById("zoneRow").classList.toggle("show",m==="draw");
   if(m==="calibrate"&&!underlay)toast("Load or paste an aerial image first, then calibrate");
   if(m==="calibrate"&&underlay)toast("Click the two ends of something whose length you know — a fence, a wall, or the map's scale bar");
   if(m==="measure")toast("Click two points to measure · right-click clears measurements");
+  if(m==="draw")toast("Click to place corners · click the first corner (or press Enter) to close · Shift snaps to 0.5 m · drag handles to adjust");
   render();
+}
+/* zone-type picker */
+function buildZoneRow(){
+  const row=document.getElementById("zoneRow");
+  row.innerHTML="";
+  Object.entries(ZS).forEach(([key,z])=>{
+    const b=document.createElement("button");
+    b.dataset.zone=key;
+    b.innerHTML=`<span class="zchip" style="background:${z.fill==="none"?"transparent":z.fill};border-color:${z.color}"></span>${z.label}`;
+    b.classList.toggle("active",key===drawType);
+    b.onclick=()=>{drawType=key;drawing=null;
+      row.querySelectorAll("button").forEach(x=>x.classList.toggle("active",x.dataset.zone===key));
+      render();};
+    row.appendChild(b);
+  });
 }
 document.querySelectorAll("#toolbar button[data-mode]").forEach(b=>
   b.onclick=()=>setMode(b.dataset.mode));
@@ -573,10 +614,12 @@ function render(){
 
   drawGrid(W,H);
   drawOrigin();
-  if(!plants.length&&!underlay)drawEmptyState(W,H);
+  if(!plants.length&&!underlay&&!zones.length)drawEmptyState(W,H);
+  zones.forEach((z,i)=>drawZone(z,i));
   plants.forEach((p,i)=>drawPlant(p,i));
   measurements.forEach(m=>drawMeasure(m));
   drawPending();
+  drawDrawingPreview();
   drawGhost();
   drawTitleBlock(W,H);
   updateReadout();
@@ -614,6 +657,184 @@ function drawEmptyState(W,H){
   t2.setAttribute("opacity",".75");
   g.appendChild(t1);g.appendChild(t2);
   svg.appendChild(g);
+}
+
+/* ---- polygon geometry (world metres) ---- */
+function polyArea(pts){
+  let s=0;
+  for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];s+=a.x*b.y-b.x*a.y;}
+  return Math.abs(s)/2;
+}
+function polyPerim(pts){
+  let s=0;
+  for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];s+=Math.hypot(b.x-a.x,b.y-a.y);}
+  return s;
+}
+function polyCentroid(pts){
+  let s=0,cx=0,cy=0;
+  for(let i=0;i<pts.length;i++){
+    const a=pts[i],b=pts[(i+1)%pts.length];
+    const cr=a.x*b.y-b.x*a.y;
+    s+=cr;cx+=(a.x+b.x)*cr;cy+=(a.y+b.y)*cr;
+  }
+  if(Math.abs(s)<1e-9){
+    return {x:pts.reduce((t,p)=>t+p.x,0)/pts.length, y:pts.reduce((t,p)=>t+p.y,0)/pts.length};
+  }
+  return {x:cx/(3*s), y:cy/(3*s)};
+}
+function pathD(pts,close){
+  return pts.map((p,i)=>(i?"L":"M")+toScreenX(p.x)+" "+toScreenY(p.y)).join(" ")+(close?" Z":"");
+}
+
+/* ---- zones ---- */
+function ensureHatch(){
+  if(svg.querySelector("#hatch"))return;
+  const defs=document.createElementNS(SVGNS,"defs");
+  defs.innerHTML=`<pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+    <line x1="0" y1="0" x2="0" y2="7" stroke="${C.inkSoft}" stroke-width="0.7" opacity="0.45"/></pattern>`;
+  svg.appendChild(defs);
+}
+
+function drawZone(z,zi){
+  const st=ZS[z.type]||ZS.bed;
+  const g=document.createElementNS(SVGNS,"g");
+  const d=pathD(z.pts,true);
+
+  if(st.fill!=="none"){
+    const f=document.createElementNS(SVGNS,"path");
+    f.setAttribute("d",d);f.setAttribute("fill",st.fill);
+    f.setAttribute("fill-opacity",st.fillOp??1);f.setAttribute("stroke","none");
+    g.appendChild(f);
+  }
+  if(st.hatch){
+    ensureHatch();
+    const h=document.createElementNS(SVGNS,"path");
+    h.setAttribute("d",d);h.setAttribute("fill","url(#hatch)");h.setAttribute("stroke","none");
+    g.appendChild(h);
+  }
+  const o=document.createElementNS(SVGNS,"path");
+  o.setAttribute("d",d);o.setAttribute("fill","none");
+  o.setAttribute("stroke",st.color);o.setAttribute("stroke-width",st.width);
+  if(st.dash)o.setAttribute("stroke-dasharray",st.dash);
+  o.setAttribute("stroke-linejoin","round");
+  g.appendChild(o);
+
+  // label with live area
+  const area=polyArea(z.pts);
+  const c=polyCentroid(z.pts);
+  const wpx=area>0?Math.sqrt(area)*view.ppm:0;
+  if(wpx>46){
+    let lbl=st.label.toUpperCase()+" · "+(area<10?area.toFixed(1):Math.round(area))+" m²";
+    if(z.type==="boundary")lbl+=" · "+Math.round(polyPerim(z.pts))+" m";
+    const t=text(toScreenX(c.x),toScreenY(c.y),lbl,st.color,9);
+    t.setAttribute("font-family",MONO);t.setAttribute("letter-spacing",".08em");
+    t.setAttribute("stroke",C.paper);t.setAttribute("stroke-width","3");t.setAttribute("paint-order","stroke");
+    g.appendChild(t);
+  }
+  svg.appendChild(g);
+
+  // edit handles — draw mode, not mid-polygon
+  if(mode!=="draw"||drawing)return;
+  z.pts.forEach((p,vi)=>{
+    const hx=toScreenX(p.x),hy=toScreenY(p.y);
+    const r=document.createElementNS(SVGNS,"rect");
+    r.setAttribute("x",hx-3.5);r.setAttribute("y",hy-3.5);
+    r.setAttribute("width",7);r.setAttribute("height",7);
+    r.setAttribute("fill",C.paper);r.setAttribute("stroke",st.color);r.setAttribute("stroke-width","1.2");
+    r.style.cursor="grab";
+    r.addEventListener("pointerdown",e=>{
+      if(e.button!==0)return;
+      e.stopPropagation();snapshot();
+      drag={type:"vertex",zi,vi,moved:false};
+      svg.setPointerCapture(e.pointerId);
+    });
+    r.addEventListener("contextmenu",e=>{
+      e.preventDefault();e.stopPropagation();
+      if(z.pts.length>3){snapshot();z.pts.splice(vi,1);render();saveSoon();}
+      else toast("A zone needs at least 3 corners — right-click the solid handle to delete it");
+    });
+    svg.appendChild(r);
+  });
+  // centroid handle — move / delete whole zone
+  const mx=toScreenX(c.x),my=toScreenY(c.y);
+  const mh=document.createElementNS(SVGNS,"rect");
+  mh.setAttribute("x",mx-4.5);mh.setAttribute("y",my-4.5);
+  mh.setAttribute("width",9);mh.setAttribute("height",9);
+  mh.setAttribute("fill",st.color);mh.setAttribute("stroke",C.paper);mh.setAttribute("stroke-width","1.4");
+  mh.style.cursor="move";
+  mh.addEventListener("pointerdown",e=>{
+    if(e.button!==0)return;
+    e.stopPropagation();snapshot();
+    drag={type:"zone",zi,lx:toWorldX(e.clientX),ly:toWorldY(e.clientY),moved:false};
+    svg.setPointerCapture(e.pointerId);
+  });
+  mh.addEventListener("contextmenu",e=>{
+    e.preventDefault();e.stopPropagation();
+    snapshot();zones.splice(zi,1);render();saveSoon();
+    toast(st.label+" removed");
+  });
+  svg.appendChild(mh);
+}
+
+/* in-progress polygon */
+function drawDrawingPreview(){
+  if(mode!=="draw"||!drawing||!drawing.length)return;
+  const st=ZS[drawType];
+  const g=document.createElementNS(SVGNS,"g");
+  g.setAttribute("pointer-events","none");
+
+  if(drawing.length>1){
+    const f=document.createElementNS(SVGNS,"path");
+    f.setAttribute("d",pathD(drawing,true));
+    f.setAttribute("fill",st.fill==="none"?st.color:st.fill);
+    f.setAttribute("fill-opacity",".1");f.setAttribute("stroke","none");
+    g.appendChild(f);
+    const o=document.createElementNS(SVGNS,"path");
+    o.setAttribute("d",pathD(drawing,false));
+    o.setAttribute("fill","none");o.setAttribute("stroke",st.color);
+    o.setAttribute("stroke-width",st.width);
+    g.appendChild(o);
+  }
+  // committed segment lengths
+  for(let i=1;i<drawing.length;i++){
+    const a=drawing[i-1],b=drawing[i];
+    const t=text((toScreenX(a.x)+toScreenX(b.x))/2,(toScreenY(a.y)+toScreenY(b.y))/2-6,
+      fmt(Math.hypot(b.x-a.x,b.y-a.y))+" m",st.color,8.5);
+    t.setAttribute("font-family",MONO);
+    t.setAttribute("stroke",C.paper);t.setAttribute("stroke-width","3");t.setAttribute("paint-order","stroke");
+    g.appendChild(t);
+  }
+  // rubber segment to cursor
+  if(lastPtr){
+    const a=drawing[drawing.length-1];
+    const l=line(toScreenX(a.x),toScreenY(a.y),lastPtr.x,lastPtr.y,st.color,1);
+    l.setAttribute("stroke-dasharray","4 4");
+    g.appendChild(l);
+    const dist=Math.hypot(toWorldX(lastPtr.x)-a.x,toWorldY(lastPtr.y)-a.y);
+    const t=text((toScreenX(a.x)+lastPtr.x)/2,(toScreenY(a.y)+lastPtr.y)/2-7,fmt(dist)+" m",st.color,9);
+    t.setAttribute("font-family",MONO);
+    t.setAttribute("stroke",C.paper);t.setAttribute("stroke-width","3");t.setAttribute("paint-order","stroke");
+    g.appendChild(t);
+  }
+  // close target on first vertex
+  const p0=drawing[0];
+  const cc=document.createElementNS(SVGNS,"circle");
+  cc.setAttribute("cx",toScreenX(p0.x));cc.setAttribute("cy",toScreenY(p0.y));
+  cc.setAttribute("r",drawing.length>=3?7:4);
+  cc.setAttribute("fill",drawing.length>=3?C.paper:st.color);
+  cc.setAttribute("stroke",st.color);cc.setAttribute("stroke-width","1.5");
+  g.appendChild(cc);
+  svg.appendChild(g);
+}
+
+function finishDrawing(){
+  if(drawing&&drawing.length>=3){
+    snapshot();
+    zones.push({type:drawType,pts:drawing});
+    const st=ZS[drawType];
+    toast(st.label+" added — "+Math.round(polyArea(drawing))+" m²");
+  }
+  drawing=null;render();saveSoon();
 }
 
 function drawPlant(p,i){
@@ -798,6 +1019,13 @@ function drawTitleBlock(W,H){
 function updateReadout(){
   const area=plants.reduce((s,p)=>s+Math.PI*(p.spread/2)**2,0);
   let html=`<b>${plants.length}</b> plants · canopy <b>${area.toFixed(0)} m²</b><br>mode <b>${mode}</b>`;
+  if(zones.length){
+    const totals={};
+    zones.forEach(z=>{totals[z.type]=(totals[z.type]||0)+polyArea(z.pts);});
+    const parts=Object.entries(totals).map(([k,a])=>
+      `${k==="boundary"?"block":ZS[k].label} <b>${Math.round(a)}</b>`);
+    html+=`<br>${parts.join(" · ")} m²`;
+  }
   if(underlay)html+=`<br>underlay 1px = <b>${(underlay.mpp*100).toFixed(1)} cm</b>`;
   document.getElementById("readout").innerHTML=html;
 }
@@ -882,6 +1110,19 @@ svg.addEventListener("pointermove",e=>{
       plants[drag.i].x=toWorldX(e.clientX+drag.dx);
       plants[drag.i].y=toWorldY(e.clientY+drag.dy);
       render();
+    }else if(drag.type==="vertex"){
+      drag.moved=true;
+      let wx=toWorldX(e.clientX),wy=toWorldY(e.clientY);
+      if(e.shiftKey){wx=Math.round(wx*2)/2;wy=Math.round(wy*2)/2;}
+      zones[drag.zi].pts[drag.vi]={x:wx,y:wy};
+      render();
+    }else if(drag.type==="zone"){
+      drag.moved=true;
+      const wx=toWorldX(e.clientX),wy=toWorldY(e.clientY);
+      const dx=wx-drag.lx,dy=wy-drag.ly;
+      zones[drag.zi].pts.forEach(p=>{p.x+=dx;p.y+=dy;});
+      drag.lx=wx;drag.ly=wy;
+      render();
     }
   }else{render();}          // ghost follows cursor
 });
@@ -892,7 +1133,7 @@ svg.addEventListener("pointerup",e=>{
   ptrs.delete(e.pointerId);
   if(pinch){if(ptrs.size<2)pinch=null;saveSoon();return;}
   const wasClick=drag&&drag.type==="pan"&&!drag.moved;
-  if(drag&&drag.type==="plant"){
+  if(drag&&(drag.type==="plant"||drag.type==="vertex"||drag.type==="zone")){
     if(!drag.moved)history.pop();      // drag never moved — drop its snapshot
     updateHistoryButtons();saveSoon();
   }
@@ -913,6 +1154,24 @@ svg.addEventListener("pointerup",e=>{
     if(!pending)pending={x:wx,y:wy};
     else{openCalDialog(pending,{x:wx,y:wy});pending=null;}
     render();
+  }else if(mode==="draw"){
+    let px=wx,py=wy;
+    if(e.shiftKey){px=Math.round(px*2)/2;py=Math.round(py*2)/2;}
+    if(!drawing){drawing=[{x:px,y:py}];}
+    else{
+      const p0=drawing[0];
+      const closeDist=Math.hypot(toScreenX(p0.x)-e.clientX,toScreenY(p0.y)-e.clientY);
+      if(drawing.length>=3&&closeDist<12){finishDrawing();return;}
+      drawing.push({x:px,y:py});
+    }
+    render();
+  }
+});
+
+svg.addEventListener("dblclick",e=>{
+  if(mode==="draw"&&drawing&&drawing.length>=4){
+    drawing.pop();               // second click of the double-click
+    finishDrawing();
   }
 });
 
@@ -930,13 +1189,18 @@ svg.addEventListener("wheel",e=>{
 
 window.addEventListener("keydown",e=>{
   const typing=/^(INPUT|TEXTAREA)$/.test(e.target.tagName);
-  if(e.key==="Escape"){pending=null;pendingCal=null;hideCalDialog();setMode("plant");return;}
+  if(e.key==="Escape"){
+    if(drawing){drawing=null;render();return;}   // cancel polygon, stay in draw mode
+    pending=null;pendingCal=null;hideCalDialog();setMode("plant");return;
+  }
+  if(e.key==="Enter"&&mode==="draw"&&drawing&&drawing.length>=3){finishDrawing();return;}
   if(typing)return;
   if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==="z"){e.preventDefault();undo();return;}
   if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==="y"||(e.shiftKey&&e.key.toLowerCase()==="z"))){e.preventDefault();redo();return;}
   if(e.key==="p")setMode("plant");
   if(e.key==="m")setMode("measure");
   if(e.key==="c")setMode("calibrate");
+  if(e.key==="d")setMode("draw");
 });
 window.addEventListener("resize",render);
 
@@ -956,6 +1220,7 @@ if(!load()){
   plants.push({x:7,y:5,...seed("Camellia sasanqua")});
 }
 buildPalette();
+buildZoneRow();
 render();
 
 if("serviceWorker" in navigator&&location.protocol.startsWith("http")){
