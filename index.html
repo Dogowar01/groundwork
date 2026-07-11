@@ -173,33 +173,64 @@
     padding:9px 18px;border-radius:8px;opacity:0;transition:opacity .3s;
     pointer-events:none;max-width:70vw;text-align:center;z-index:40;line-height:1.5;
   }
-  #calDialog{
+  .dlg{
     position:fixed;top:50%;left:calc(50% + var(--panel-w)/2);transform:translate(-50%,-50%);
     background:var(--panel);border:1px solid var(--paper-edge);border-radius:12px;
     box-shadow:0 12px 44px rgba(50,45,36,.28);
     padding:20px 22px;width:312px;display:none;font-size:13px;z-index:50;
   }
-  #calDialog h2{
+  .dlg h2{
     font-family:var(--mono);font-size:10px;margin:0 0 12px;
     text-transform:uppercase;letter-spacing:.22em;color:var(--accent-deep);font-weight:500;
   }
-  #calDialog .row{display:flex;align-items:center;justify-content:space-between;margin:9px 0;gap:8px}
-  #calDialog .row span{font-size:13px}
-  #calDialog input{
+  .dlg .row{display:flex;align-items:center;justify-content:space-between;margin:9px 0;gap:8px}
+  .dlg .row span{font-size:13px}
+  .dlg input{
     width:78px;font-family:var(--mono);font-size:13px;padding:5px 7px;
     border:1px solid var(--paper-edge);border-radius:6px;background:rgba(255,255,255,.55);
     color:var(--ink);outline:none;text-align:right;
   }
-  #calDialog input:focus{border-color:var(--accent)}
-  #calDialog .note{font-size:11.5px;font-style:italic;color:var(--ink-soft);line-height:1.5;margin:12px 0 4px}
-  #calDialog .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
-  #calDialog .btns button{
+  .dlg input:focus{border-color:var(--accent)}
+  .dlg .note{font-size:11.5px;font-style:italic;color:var(--ink-soft);line-height:1.5;margin:12px 0 4px}
+  .dlg .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+  .dlg .btns button{
     font-family:var(--mono);font-size:11px;letter-spacing:.05em;
     padding:6px 15px;border-radius:7px;cursor:pointer;
     border:1px solid var(--paper-edge);background:transparent;color:var(--ink);
   }
-  #calDialog .btns button.primary{background:var(--accent);border-color:var(--accent);color:var(--paper)}
-  #calDialog .btns button.primary:hover{background:var(--accent-deep)}
+  .dlg .btns button.primary{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+  .dlg .btns button.primary:hover{background:var(--accent-deep)}
+
+  /* ================= sun panel ================= */
+  #sunPanel{
+    position:fixed;bottom:18px;left:calc(var(--panel-w) + 16px);
+    background:var(--panel);border:1px solid var(--paper-edge);border-radius:11px;
+    box-shadow:0 4px 18px rgba(60,50,30,.12);
+    padding:13px 15px;width:238px;display:none;z-index:14;
+  }
+  #sunPanel.show{display:block}
+  #sunPanel h2{
+    font-family:var(--mono);font-size:9px;margin:0 0 9px;
+    text-transform:uppercase;letter-spacing:.24em;color:var(--accent-deep);font-weight:500;
+  }
+  .seg{display:flex;border:1px solid var(--paper-edge);border-radius:7px;overflow:hidden;margin-bottom:10px}
+  .seg button{
+    flex:1;font-family:var(--mono);font-size:10px;letter-spacing:.04em;
+    padding:5px 0;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;
+  }
+  .seg button+button{border-left:1px solid var(--paper-edge)}
+  .seg button.active{background:rgba(156,91,51,.16);color:var(--accent-deep)}
+  #sunTime{width:100%;accent-color:var(--accent);margin:2px 0 6px}
+  #sunInfo{font-family:var(--mono);font-size:10px;color:var(--ink);letter-spacing:.04em;line-height:1.7}
+  #sunPanel .note{
+    font-size:10.5px;font-style:italic;color:var(--ink-soft);line-height:1.45;
+    margin-top:8px;border-top:1px solid var(--paper-edge);padding-top:8px;
+  }
+  #sunPanel .note input{
+    width:46px;font-family:var(--mono);font-size:10px;padding:1px 3px;
+    border:1px solid var(--paper-edge);border-radius:4px;background:rgba(255,255,255,.5);
+    color:var(--ink);outline:none;font-style:normal;
+  }
 
   /* ================= mobile ================= */
   @media (max-width:760px){
@@ -210,6 +241,7 @@
     #toolbar{top:auto;bottom:14px;max-width:calc(100vw - 20px)}
     #readout{display:none}
     #toast{bottom:76px}
+    #sunPanel{left:12px;bottom:126px}
   }
 </style>
 </head>
@@ -225,12 +257,11 @@
     <input id="search" type="text" placeholder="search plants…" spellcheck="false" autocomplete="off">
     <div id="plantList"></div>
     <div class="hint">
-      <b>Click</b> to plant · drag to move · right-click removes ·
-      scroll zooms · drag ground pans.<br>
-      <kbd>Ctrl</kbd>+<kbd>V</kbd> pastes an aerial photo, then <b>Calibrate</b>
-      two ends of a known length. <b>Draw</b> traces boundary, house, lawn
-      &amp; beds with live m². Circles are <b>real mature spread</b> —
-      overlaps are future crowding.
+      <b>Click</b> to plant · click a plant to select, then <kbd>Del</kbd> or ×
+      removes it · drag to move · scroll zooms.<br>
+      <kbd>Ctrl</kbd>+<kbd>V</kbd> pastes an aerial, <b>Calibrate</b> sets scale,
+      <b>Draw</b> traces boundary, house &amp; beds, <b>Sun</b> casts seasonal
+      shadows from roof &amp; tree heights. Outlines are <b>real mature spread</b>.
     </div>
   </div>
 
@@ -254,6 +285,9 @@
     <button id="redoBtn" title="Redo (Ctrl+Y)" disabled>
       <svg viewBox="0 0 24 24"><path d="m16 5 5 5-5 5m5-5H10a6 6 0 0 0 0 12h3"/></svg></button>
     <div class="sep"></div>
+    <button id="sunBtn" title="Sun & shade — seasonal shadows from house and trees (S)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v3m0 13v3M2.5 12h3m13 0h3M5 5l2.1 2.1M16.9 16.9 19 19M19 5l-2.1 2.1M7.1 16.9 5 19"/></svg>sun</button>
+    <div class="sep"></div>
     <button id="zoomOut" title="Zoom out"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
     <button id="zoomIn" title="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
     <button id="exportBtn" title="Export the plan as a PNG">
@@ -264,7 +298,42 @@
   <div id="readout"></div>
   <div id="toast"></div>
 
-  <div id="calDialog">
+  <div id="sunPanel">
+    <h2>Sun &amp; shade</h2>
+    <div class="seg" id="seasonSeg">
+      <button data-season="winter" class="active">winter</button>
+      <button data-season="equinox">equinox</button>
+      <button data-season="summer">summer</button>
+    </div>
+    <input id="sunTime" type="range" min="7" max="19" step="0.5" value="12">
+    <div id="sunInfo"></div>
+    <div class="note">Assumes the plan is north-up ↑ (LISTmap &amp; Google default).
+      Shadows cast by house roofs &amp; mature tree heights.
+      lat <input id="latInput" type="number" step="0.1" min="-60" max="60" value="-41.4">°
+    </div>
+  </div>
+
+  <div id="hDialog" class="dlg">
+    <h2>Roof height</h2>
+    <div class="row"><span>Height above ground</span><span><input id="hVal" type="number" min="1" max="30" step="0.5" value="4"> m</span></div>
+    <div class="note">The aerial shows the roof outline, so you've already traced it — this sets how far its shadow throws. Use a height between eave and ridge (single storey ≈ 3.5–5 m, two storey ≈ 6.5–8 m).</div>
+    <div class="btns">
+      <button id="hCancel">cancel</button>
+      <button id="hApply" class="primary">set height</button>
+    </div>
+  </div>
+
+  <div id="slopeDialog" class="dlg">
+    <h2>Slope marker</h2>
+    <div class="row"><span>Fall along the arrow</span><span><input id="slopeVal" type="number" min="1" max="45" step="1" value="8"> °</span></div>
+    <div class="note">Arrow points downhill. The angle also feeds the measure tool's slope° so ground distances read true in that area.</div>
+    <div class="btns">
+      <button id="slopeCancel">cancel</button>
+      <button id="slopeApply" class="primary">place arrow</button>
+    </div>
+  </div>
+
+  <div id="calDialog" class="dlg">
     <h2>Set scale</h2>
     <div class="row"><span>True length of that line</span><span><input id="calLen" type="number" min="0.1" step="0.1"> m</span></div>
     <div class="row"><span>Ground slope along it</span><span><input id="calSlope" type="number" min="0" max="45" step="1" value="0"> °</span></div>
@@ -296,72 +365,73 @@ const SERIF="'Fraunces','Iowan Old Style',Georgia,serif";
    spread = realistic mature canopy spread in metres
 ================================================================ */
 const CATALOGUE=[
-  {cat:"Native trees", name:"Cider gum",            bot:"Eucalyptus gunnii",        spread:6,   hue:"#6f9a74"},
-  {cat:"Native trees", name:"Snow gum",             bot:"Eucalyptus pauciflora",    spread:5,   hue:"#7ba283"},
-  {cat:"Native trees", name:"Blackwood",            bot:"Acacia melanoxylon",       spread:8,   hue:"#5c8a5f"},
-  {cat:"Native trees", name:"Silver wattle",        bot:"Acacia dealbata",          spread:6,   hue:"#8fae66"},
-  {cat:"Native trees", name:"Myrtle beech",         bot:"Nothofagus cunninghamii",  spread:6,   hue:"#4f7d58"},
-  {cat:"Native trees", name:"Soft tree fern",       bot:"Dicksonia antarctica",     spread:3,   hue:"#57905c"},
-  {cat:"Native trees", name:"Woolly tea-tree",      bot:"Leptospermum lanigerum",   spread:3,   hue:"#87a37e"},
-  {cat:"Native trees", name:"Silver banksia",       bot:"Banksia marginata",        spread:3,   hue:"#9aa25e"},
-  {cat:"Native trees", name:"Mountain pepper",      bot:"Tasmannia lanceolata",     spread:2,   hue:"#6b8f4e"},
+  {cat:"Native trees", name:"Cider gum",            bot:"Eucalyptus gunnii",        spread:6,   h:12, hue:"#6f9a74"},
+  {cat:"Native trees", name:"Snow gum",             bot:"Eucalyptus pauciflora",    spread:5,   h:8, hue:"#7ba283"},
+  {cat:"Native trees", name:"Blackwood",            bot:"Acacia melanoxylon",       spread:8,   h:15, hue:"#5c8a5f"},
+  {cat:"Native trees", name:"Silver wattle",        bot:"Acacia dealbata",          spread:6,   h:10, hue:"#8fae66"},
+  {cat:"Native trees", name:"Myrtle beech",         bot:"Nothofagus cunninghamii",  spread:6,   h:10, hue:"#4f7d58"},
+  {cat:"Native trees", name:"Soft tree fern",       bot:"Dicksonia antarctica",     spread:3,   h:4, hue:"#57905c", form:"tuft"},
+  {cat:"Native trees", name:"Woolly tea-tree",      bot:"Leptospermum lanigerum",   spread:3,   h:4, hue:"#87a37e"},
+  {cat:"Native trees", name:"Silver banksia",       bot:"Banksia marginata",        spread:3,   h:5, hue:"#9aa25e"},
+  {cat:"Native trees", name:"Mountain pepper",      bot:"Tasmannia lanceolata",     spread:2,   h:3, hue:"#6b8f4e"},
 
-  {cat:"Native shrubs & grasses", name:"White correa",      bot:"Correa alba",            spread:1.5, hue:"#9db089"},
-  {cat:"Native shrubs & grasses", name:"Native fuchsia",    bot:"Correa reflexa",         spread:1,   hue:"#a8845e"},
-  {cat:"Native shrubs & grasses", name:"Royal grevillea",   bot:"Grevillea victoriae",    spread:2.5, hue:"#b07a4a"},
-  {cat:"Native shrubs & grasses", name:"Lemon bottlebrush", bot:"Callistemon pallidus",   spread:2.5, hue:"#a8a95c"},
-  {cat:"Native shrubs & grasses", name:"Coastal rosemary",  bot:"Westringia fruticosa",   spread:1.5, hue:"#8aa0a6"},
-  {cat:"Native shrubs & grasses", name:"Sagg / lomandra",   bot:"Lomandra longifolia",    spread:1,   hue:"#7f9b52"},
-  {cat:"Native shrubs & grasses", name:"Tasman flax-lily",  bot:"Dianella tasmanica",     spread:0.8, hue:"#6a8fa0"},
-  {cat:"Native shrubs & grasses", name:"Silver tussock",    bot:"Poa labillardierei",     spread:0.9, hue:"#a9ab84"},
-  {cat:"Native shrubs & grasses", name:"Creeping boobialla",bot:"Myoporum parvifolium",   spread:2,   hue:"#7ea56b"},
+  {cat:"Native shrubs & grasses", name:"White correa",      bot:"Correa alba",            spread:1.5, h:1.5, hue:"#9db089"},
+  {cat:"Native shrubs & grasses", name:"Native fuchsia",    bot:"Correa reflexa",         spread:1,   h:1, hue:"#a8845e"},
+  {cat:"Native shrubs & grasses", name:"Royal grevillea",   bot:"Grevillea victoriae",    spread:2.5, h:2.5, hue:"#b07a4a"},
+  {cat:"Native shrubs & grasses", name:"Lemon bottlebrush", bot:"Callistemon pallidus",   spread:2.5, h:3, hue:"#a8a95c"},
+  {cat:"Native shrubs & grasses", name:"Coastal rosemary",  bot:"Westringia fruticosa",   spread:1.5, h:1.5, hue:"#8aa0a6"},
+  {cat:"Native shrubs & grasses", name:"Sagg / lomandra",   bot:"Lomandra longifolia",    spread:1,   h:1, hue:"#7f9b52", form:"tuft"},
+  {cat:"Native shrubs & grasses", name:"Tasman flax-lily",  bot:"Dianella tasmanica",     spread:0.8, h:0.8, hue:"#6a8fa0", form:"tuft"},
+  {cat:"Native shrubs & grasses", name:"Silver tussock",    bot:"Poa labillardierei",     spread:0.9, h:0.8, hue:"#a9ab84", form:"tuft"},
+  {cat:"Native shrubs & grasses", name:"Creeping boobialla",bot:"Myoporum parvifolium",   spread:2,   h:0.3, hue:"#7ea56b"},
 
-  {cat:"Exotic & feature trees", name:"Silver birch",     bot:"Betula pendula",          spread:4,  hue:"#8fae6b"},
-  {cat:"Exotic & feature trees", name:"Japanese maple",   bot:"Acer palmatum",           spread:4,  hue:"#b07048"},
-  {cat:"Exotic & feature trees", name:"Manchurian pear",  bot:"Pyrus ussuriensis",       spread:5,  hue:"#7fa25c"},
-  {cat:"Exotic & feature trees", name:"Ornamental pear 'Capital'", bot:"Pyrus calleryana",spread:3, hue:"#86a868"},
-  {cat:"Exotic & feature trees", name:"Crab apple",       bot:"Malus ioensis",           spread:4,  hue:"#a58a5a"},
-  {cat:"Exotic & feature trees", name:"Claret ash",       bot:"Fraxinus 'Raywood'",      spread:7,  hue:"#8d6a55"},
-  {cat:"Exotic & feature trees", name:"Liquidambar",      bot:"L. styraciflua",          spread:8,  hue:"#a2653f"},
-  {cat:"Exotic & feature trees", name:"Saucer magnolia",  bot:"Magnolia × soulangeana",  spread:4,  hue:"#b58ea0"},
-  {cat:"Exotic & feature trees", name:"Flowering dogwood",bot:"Cornus florida",          spread:4,  hue:"#c09a7c"},
-  {cat:"Exotic & feature trees", name:"Crepe myrtle",     bot:"Lagerstroemia indica",    spread:3,  hue:"#b57f8e"},
-  {cat:"Exotic & feature trees", name:"Weeping cherry",   bot:"Prunus pendula",          spread:4,  hue:"#c48ba4"},
-  {cat:"Exotic & feature trees", name:"Ginkgo",           bot:"Ginkgo biloba",           spread:6,  hue:"#a9b45f"},
+  {cat:"Exotic & feature trees", name:"Silver birch",     bot:"Betula pendula",          spread:4,  h:12, hue:"#8fae6b"},
+  {cat:"Exotic & feature trees", name:"Japanese maple",   bot:"Acer palmatum",           spread:4,  h:4, hue:"#b07048"},
+  {cat:"Exotic & feature trees", name:"Manchurian pear",  bot:"Pyrus ussuriensis",       spread:5,  h:8, hue:"#7fa25c"},
+  {cat:"Exotic & feature trees", name:"Ornamental pear 'Capital'", bot:"Pyrus calleryana",spread:3, h:9, hue:"#86a868"},
+  {cat:"Exotic & feature trees", name:"Crab apple",       bot:"Malus ioensis",           spread:4,  h:5, hue:"#a58a5a"},
+  {cat:"Exotic & feature trees", name:"Claret ash",       bot:"Fraxinus 'Raywood'",      spread:7,  h:12, hue:"#8d6a55"},
+  {cat:"Exotic & feature trees", name:"Liquidambar",      bot:"L. styraciflua",          spread:8,  h:15, hue:"#a2653f"},
+  {cat:"Exotic & feature trees", name:"Saucer magnolia",  bot:"Magnolia × soulangeana",  spread:4,  h:5, hue:"#b58ea0"},
+  {cat:"Exotic & feature trees", name:"Flowering dogwood",bot:"Cornus florida",          spread:4,  h:5, hue:"#c09a7c"},
+  {cat:"Exotic & feature trees", name:"Crepe myrtle",     bot:"Lagerstroemia indica",    spread:3,  h:4, hue:"#b57f8e"},
+  {cat:"Exotic & feature trees", name:"Weeping cherry",   bot:"Prunus pendula",          spread:4,  h:3, hue:"#c48ba4"},
+  {cat:"Exotic & feature trees", name:"Ginkgo",           bot:"Ginkgo biloba",           spread:6,  h:10, hue:"#a9b45f"},
 
-  {cat:"Fruit & productive", name:"Apple",          bot:"on M26 rootstock",   spread:4,   hue:"#93b25a"},
-  {cat:"Fruit & productive", name:"Pear",           bot:"Pyrus communis",     spread:4,   hue:"#9cb069"},
-  {cat:"Fruit & productive", name:"Sweet cherry",   bot:"Prunus avium",       spread:5,   hue:"#a06258"},
-  {cat:"Fruit & productive", name:"Plum",           bot:"Prunus domestica",   spread:4,   hue:"#8a6f8e"},
-  {cat:"Fruit & productive", name:"Meyer lemon",    bot:"needs shelter here", spread:2.5, hue:"#b8b04e"},
-  {cat:"Fruit & productive", name:"Feijoa",         bot:"Acca sellowiana",    spread:3,   hue:"#7f9f7d"},
-  {cat:"Fruit & productive", name:"Fig",            bot:"Ficus carica",       spread:5,   hue:"#87975a"},
-  {cat:"Fruit & productive", name:"Olive",          bot:"Olea europaea",      spread:5,   hue:"#9aa878"},
-  {cat:"Fruit & productive", name:"Hazelnut",       bot:"Corylus avellana",   spread:4,   hue:"#96854f"},
-  {cat:"Fruit & productive", name:"Walnut",         bot:"Juglans regia",      spread:10,  hue:"#7d8455"},
-  {cat:"Fruit & productive", name:"Blueberry",      bot:"Vaccinium",          spread:1.2, hue:"#6d7fa3"},
-  {cat:"Fruit & productive", name:"Raspberry clump",bot:"Rubus idaeus",       spread:1,   hue:"#a5586a"},
+  {cat:"Fruit & productive", name:"Apple",          bot:"on M26 rootstock",   spread:4,   h:4, hue:"#93b25a"},
+  {cat:"Fruit & productive", name:"Pear",           bot:"Pyrus communis",     spread:4,   h:5, hue:"#9cb069"},
+  {cat:"Fruit & productive", name:"Sweet cherry",   bot:"Prunus avium",       spread:5,   h:6, hue:"#a06258"},
+  {cat:"Fruit & productive", name:"Plum",           bot:"Prunus domestica",   spread:4,   h:4, hue:"#8a6f8e"},
+  {cat:"Fruit & productive", name:"Meyer lemon",    bot:"needs shelter here", spread:2.5, h:3, hue:"#b8b04e"},
+  {cat:"Fruit & productive", name:"Feijoa",         bot:"Acca sellowiana",    spread:3,   h:3, hue:"#7f9f7d"},
+  {cat:"Fruit & productive", name:"Fig",            bot:"Ficus carica",       spread:5,   h:5, hue:"#87975a"},
+  {cat:"Fruit & productive", name:"Olive",          bot:"Olea europaea",      spread:5,   h:6, hue:"#9aa878"},
+  {cat:"Fruit & productive", name:"Hazelnut",       bot:"Corylus avellana",   spread:4,   h:5, hue:"#96854f"},
+  {cat:"Fruit & productive", name:"Walnut",         bot:"Juglans regia",      spread:10,  h:12, hue:"#7d8455"},
+  {cat:"Fruit & productive", name:"Blueberry",      bot:"Vaccinium",          spread:1.2, h:1.5, hue:"#6d7fa3"},
+  {cat:"Fruit & productive", name:"Raspberry clump",bot:"Rubus idaeus",       spread:1,   h:1.5, hue:"#a5586a"},
 
-  {cat:"Shrubs & hedging", name:"Camellia sasanqua",  bot:"",                     spread:2.5, hue:"#7f9a6a"},
-  {cat:"Shrubs & hedging", name:"Rhododendron",       bot:"",                     spread:3,   hue:"#8e6f92"},
-  {cat:"Shrubs & hedging", name:"Azalea",             bot:"",                     spread:1.2, hue:"#b0788c"},
-  {cat:"Shrubs & hedging", name:"Buxus ball",         bot:"Buxus sempervirens",   spread:1,   hue:"#6f8f5f"},
-  {cat:"Shrubs & hedging", name:"Pittosporum 'Silver Sheen'", bot:"hedging",      spread:2,   hue:"#93a894"},
-  {cat:"Shrubs & hedging", name:"Viburnum tinus",     bot:"hedging",              spread:2.5, hue:"#6e8c6b"},
-  {cat:"Shrubs & hedging", name:"Photinia 'Red Robin'",bot:"hedging",             spread:3,   hue:"#95634c"},
-  {cat:"Shrubs & hedging", name:"Escallonia",         bot:"",                     spread:2,   hue:"#9d7a72"},
-  {cat:"Shrubs & hedging", name:"Hydrangea",          bot:"",                     spread:1.5, hue:"#7d8fb0"},
-  {cat:"Shrubs & hedging", name:"English lavender",   bot:"Lavandula angustifolia",spread:0.8,hue:"#9b8fb0"},
-  {cat:"Shrubs & hedging", name:"Rosemary",           bot:"",                     spread:1,   hue:"#8aa0a6"},
-  {cat:"Shrubs & hedging", name:"Hebe",               bot:"",                     spread:1.2, hue:"#7f9c95"},
+  {cat:"Shrubs & hedging", name:"Camellia sasanqua",  bot:"",                     spread:2.5, h:3, hue:"#7f9a6a"},
+  {cat:"Shrubs & hedging", name:"Rhododendron",       bot:"",                     spread:3,   h:3, hue:"#8e6f92"},
+  {cat:"Shrubs & hedging", name:"Azalea",             bot:"",                     spread:1.2, h:1.2, hue:"#b0788c"},
+  {cat:"Shrubs & hedging", name:"Buxus ball",         bot:"Buxus sempervirens",   spread:1,   h:1, hue:"#6f8f5f"},
+  {cat:"Shrubs & hedging", name:"Pittosporum 'Silver Sheen'", bot:"hedging",      spread:2,   h:4, hue:"#93a894"},
+  {cat:"Shrubs & hedging", name:"Viburnum tinus",     bot:"hedging",              spread:2.5, h:3, hue:"#6e8c6b"},
+  {cat:"Shrubs & hedging", name:"Photinia 'Red Robin'",bot:"hedging",             spread:3,   h:4, hue:"#95634c"},
+  {cat:"Shrubs & hedging", name:"Escallonia",         bot:"",                     spread:2,   h:2.5, hue:"#9d7a72"},
+  {cat:"Shrubs & hedging", name:"Hydrangea",          bot:"",                     spread:1.5, h:1.5, hue:"#7d8fb0"},
+  {cat:"Shrubs & hedging", name:"English lavender",   bot:"Lavandula angustifolia",spread:0.8,h:0.8, hue:"#9b8fb0", form:"tuft"},
+  {cat:"Shrubs & hedging", name:"Rosemary",           bot:"",                     spread:1,   h:1.2, hue:"#8aa0a6"},
+  {cat:"Shrubs & hedging", name:"Hebe",               bot:"",                     spread:1.2, h:1.2, hue:"#7f9c95"},
 
-  {cat:"Perennials & groundcover", name:"Salvia 'Hot Lips'",  bot:"",                     spread:1,   hue:"#ab6070"},
-  {cat:"Perennials & groundcover", name:"Euphorbia wulfenii", bot:"",                     spread:1.2, hue:"#a3ad60"},
-  {cat:"Perennials & groundcover", name:"Miscanthus",         bot:"ornamental grass",     spread:1.2, hue:"#b3a370"},
-  {cat:"Perennials & groundcover", name:"Blue fescue",        bot:"Festuca glauca",       spread:0.4, hue:"#8fa3ad"},
-  {cat:"Perennials & groundcover", name:"Wind grass",         bot:"Anemanthele lessoniana",spread:0.9,hue:"#b09a5e"},
-  {cat:"Perennials & groundcover", name:"Seaside daisy",      bot:"Erigeron karvinskianus",spread:0.6,hue:"#b0a2a8"},
+  {cat:"Perennials & groundcover", name:"Salvia 'Hot Lips'",  bot:"",                     spread:1,   h:1, hue:"#ab6070", form:"tuft"},
+  {cat:"Perennials & groundcover", name:"Euphorbia wulfenii", bot:"",                     spread:1.2, h:1, hue:"#a3ad60"},
+  {cat:"Perennials & groundcover", name:"Miscanthus",         bot:"ornamental grass",     spread:1.2, h:1.5, hue:"#b3a370", form:"tuft"},
+  {cat:"Perennials & groundcover", name:"Blue fescue",        bot:"Festuca glauca",       spread:0.4, h:0.4, hue:"#8fa3ad", form:"tuft"},
+  {cat:"Perennials & groundcover", name:"Wind grass",         bot:"Anemanthele lessoniana",spread:0.9,h:1, hue:"#b09a5e", form:"tuft"},
+  {cat:"Perennials & groundcover", name:"Seaside daisy",      bot:"Erigeron karvinskianus",spread:0.6,h:0.3, hue:"#b0a2a8", form:"tuft"},
 ];
+const byName=n=>CATALOGUE.find(c=>c.name===n);
 
 /* ================================================================ zones */
 const ZS={
@@ -375,18 +445,28 @@ const ZS={
 
 /* ================================================================ state */
 const view={ox:300, oy:130, ppm:26};
-let plants=[];
+let plants=[];                // {x,y,name,spread,hue,h,seed}
 let measurements=[];
-let zones=[];                 // {type, pts:[{x,y}(m)]}
+let zones=[];                 // {type, pts:[{x,y}(m)], h? (structure roof height m)}
+let slopes=[];                // {ax,ay,bx,by,deg} — downhill arrows
 let drawing=null;             // in-progress vertex list
 let drawType="boundary";
 let underlay=null;
 let mode="plant";
 let pending=null;
 let pendingCal=null;
+let pendingSlope=null;        // [p1,p2] awaiting degrees
 let lastPtr=null;
 let planTitle="";
+let selected=null;            // selected plant index (plant mode)
+let sun={on:false,season:"winter",time:12,lat:-41.4};
 let active=CATALOGUE.find(p=>p.name==="Silver birch");
+
+/* deterministic per-plant randomness for organic canopy outlines */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const plantSeed=p=>p.seed??Math.abs(Math.round(p.x*7919+p.y*104729))+1;
+const plantH=p=>p.h??(byName(p.name)?byName(p.name).h:p.spread*1.2);
+const plantForm=p=>{const c=byName(p.name);return c&&c.form||"canopy";};
 
 const toScreenX=mx=>view.ox+mx*view.ppm;
 const toScreenY=my=>view.oy+my*view.ppm;
@@ -396,14 +476,15 @@ const rad=d=>d*Math.PI/180;
 
 /* ================================================================ history */
 let history=[],future=[];
-const stateStr=()=>JSON.stringify({plants,measurements,zones});
+const stateStr=()=>JSON.stringify({plants,measurements,zones,slopes});
 function snapshot(){
   history.push(stateStr());
   if(history.length>60)history.shift();
   future=[];updateHistoryButtons();
 }
 function restore(str){
-  const d=JSON.parse(str);plants=d.plants;measurements=d.measurements;zones=d.zones||[];
+  const d=JSON.parse(str);plants=d.plants;measurements=d.measurements;zones=d.zones||[];slopes=d.slopes||[];
+  selected=null;
   render();saveSoon();
 }
 function undo(){
@@ -427,7 +508,7 @@ const OLD_KEY="siteplan.pinetree.v1";
 let saveTimer=null;
 function saveSoon(){clearTimeout(saveTimer);saveTimer=setTimeout(save,600);}
 function save(){
-  const data={plants,measurements,zones,view,planTitle,underlay:underlay?{...underlay}:null};
+  const data={plants,measurements,zones,slopes,sun,view,planTitle,underlay:underlay?{...underlay}:null};
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(data));}
   catch(e){
     if(data.underlay)data.underlay={...data.underlay,dataURL:null};
@@ -443,7 +524,8 @@ function load(){
     }
     const d=JSON.parse(raw);
     if(!d)return false;
-    plants=d.plants||[];measurements=d.measurements||[];zones=d.zones||[];
+    plants=d.plants||[];measurements=d.measurements||[];zones=d.zones||[];slopes=d.slopes||[];
+    if(d.sun)Object.assign(sun,d.sun);
     Object.assign(view,d.view||{});
     planTitle=d.planTitle||"";
     document.getElementById("planTitle").value=planTitle;
@@ -469,7 +551,7 @@ function buildPalette(filter=""){
       el.className="plant"+(p===active?" active":"");
       const d=Math.max(9,Math.min(24,5+p.spread*2.4));
       el.innerHTML=`<span class="swatch" style="background:${p.hue}33;border-color:${p.hue};width:${d}px;height:${d}px"></span>
-        <span><span class="nm">${p.name}</span><br><span class="sp">${p.spread} m${p.bot?" · <i>"+p.bot+"</i>":""}</span></span>`;
+        <span><span class="nm">${p.name}</span><br><span class="sp">${p.spread}m × ${p.h}m tall${p.bot?" · <i>"+p.bot+"</i>":""}</span></span>`;
       el.onclick=()=>{
         active=p;setMode("plant");
         buildPalette(document.getElementById("search").value.toLowerCase());
@@ -485,7 +567,8 @@ document.getElementById("paletteToggle").onclick=()=>document.getElementById("pa
 
 /* ================================================================ toolbar */
 function setMode(m){
-  mode=m;pending=null;pendingCal=null;drawing=null;hideCalDialog();
+  mode=m;pending=null;pendingCal=null;pendingSlope=null;drawing=null;selected=null;
+  hideCalDialog();hideSlopeDialog();
   document.querySelectorAll("#toolbar button[data-mode]").forEach(b=>
     b.classList.toggle("active",b.dataset.mode===m));
   document.getElementById("zoneRow").classList.toggle("show",m==="draw");
@@ -499,13 +582,16 @@ function setMode(m){
 function buildZoneRow(){
   const row=document.getElementById("zoneRow");
   row.innerHTML="";
-  Object.entries(ZS).forEach(([key,z])=>{
+  const entries=[...Object.entries(ZS),
+    ["slope",{label:"slope ↘",color:C.accentDeep,fill:"transparent"}]];
+  entries.forEach(([key,z])=>{
     const b=document.createElement("button");
     b.dataset.zone=key;
     b.innerHTML=`<span class="zchip" style="background:${z.fill==="none"?"transparent":z.fill};border-color:${z.color}"></span>${z.label}`;
     b.classList.toggle("active",key===drawType);
-    b.onclick=()=>{drawType=key;drawing=null;
+    b.onclick=()=>{drawType=key;drawing=null;pending=null;
       row.querySelectorAll("button").forEach(x=>x.classList.toggle("active",x.dataset.zone===key));
+      if(key==="slope")toast("Click the uphill end, then the downhill end — the arrow points down the fall");
       render();};
     row.appendChild(b);
   });
@@ -594,6 +680,196 @@ function applyCalibration(){
   toast(`Scale set — that line is ${planLen.toFixed(2)} m on plan`+(s?` (${L} m along ${s}° ground)`:``));
 }
 
+/* ================================================================ sun & shade
+   Simple solar-position model. Clock time ≈ solar time; declination fixed
+   per season: winter solstice (Jun, southern) +23.44°, summer −23.44°.
+   North is up on the plan. */
+function sunPos(){
+  const phi=rad(sun.lat);
+  const dec=rad(sun.season==="winter"?23.44:sun.season==="summer"?-23.44:0);
+  const H=rad(15*(sun.time-12));
+  const sinEl=Math.sin(phi)*Math.sin(dec)+Math.cos(phi)*Math.cos(dec)*Math.cos(H);
+  const el=Math.asin(Math.max(-1,Math.min(1,sinEl)));
+  let az=Math.acos(Math.max(-1,Math.min(1,
+    (Math.sin(dec)-sinEl*Math.sin(phi))/(Math.cos(el)*Math.cos(phi)||1e-9))));
+  if(H>0)az=2*Math.PI-az;          // afternoon → western sky
+  return {el,az};                   // radians; az from north, clockwise
+}
+function shadowVec(){
+  const {el,az}=sunPos();
+  if(el<=0.02)return null;          // below horizon
+  const azS=az+Math.PI;             // shadow thrown away from the sun
+  const perM=1/Math.tan(el);        // m of shadow per m of height
+  return {dx:Math.sin(azS)*perM, dy:-Math.cos(azS)*perM, el, az};
+}
+
+function drawShadows(){
+  if(!sun.on)return;
+  const v=shadowVec();
+  updateSunInfo(v);
+  if(!v)return;
+  const g=document.createElementNS(SVGNS,"g");
+  g.setAttribute("opacity",".17");      // children opaque → overlaps union, not stack
+  g.setAttribute("pointer-events","none");
+  const SH="#3a3426";
+
+  // structures: footprint ∪ offset footprint ∪ edge quads
+  zones.filter(z=>z.type==="structure").forEach(z=>{
+    const h=z.h||4;
+    const ox=v.dx*h,oy=v.dy*h;
+    const off=z.pts.map(p=>({x:p.x+ox,y:p.y+oy}));
+    const add=pts=>{
+      const p=document.createElementNS(SVGNS,"path");
+      p.setAttribute("d",pathD(pts,true));p.setAttribute("fill",SH);
+      g.appendChild(p);
+    };
+    add(z.pts);add(off);
+    for(let i=0;i<z.pts.length;i++){
+      const a=z.pts[i],b=z.pts[(i+1)%z.pts.length];
+      add([a,b,off[(i+1)%z.pts.length],off[i]]);
+    }
+  });
+
+  // trees: canopy disc cast from ~0.7 × height (canopy centre)
+  plants.forEach(p=>{
+    const h=plantH(p);
+    if(h<0.5)return;
+    const c=document.createElementNS(SVGNS,"circle");
+    c.setAttribute("cx",toScreenX(p.x+v.dx*h*0.7));
+    c.setAttribute("cy",toScreenY(p.y+v.dy*h*0.7));
+    c.setAttribute("r",(p.spread/2)*view.ppm);
+    c.setAttribute("fill",SH);
+    g.appendChild(c);
+  });
+  svg.appendChild(g);
+}
+
+function fmtTime(t){
+  const hh=Math.floor(t),mm=Math.round((t-hh)*60);
+  return hh+":"+String(mm).padStart(2,"0");
+}
+function updateSunInfo(v){
+  const el=document.getElementById("sunInfo");
+  if(!sun.on){el.textContent="";return;}
+  if(v===undefined)v=shadowVec();
+  if(!v){el.innerHTML=fmtTime(sun.time)+" · sun below the horizon";return;}
+  const dirs=["N","NE","E","SE","S","SW","W","NW"];
+  const dir=dirs[Math.round((v.az*180/Math.PI)/45)%8];
+  el.innerHTML=`${fmtTime(sun.time)} · sun ${Math.round(v.el*180/Math.PI)}° high in the ${dir}<br>shadows ${(1/Math.tan(v.el)).toFixed(1)} m per m of height`;
+}
+function syncSunUI(){
+  document.getElementById("sunBtn").classList.toggle("active",sun.on);
+  document.getElementById("sunPanel").classList.toggle("show",sun.on);
+  document.querySelectorAll("#seasonSeg button").forEach(b=>
+    b.classList.toggle("active",b.dataset.season===sun.season));
+  document.getElementById("sunTime").value=sun.time;
+  document.getElementById("latInput").value=sun.lat;
+}
+document.getElementById("sunBtn").onclick=()=>{
+  sun.on=!sun.on;syncSunUI();render();saveSoon();
+  if(sun.on)toast("Shadows from house roofs & tree heights — set season and time below left");
+};
+document.querySelectorAll("#seasonSeg button").forEach(b=>
+  b.onclick=()=>{sun.season=b.dataset.season;syncSunUI();render();saveSoon();});
+document.getElementById("sunTime").addEventListener("input",e=>{
+  sun.time=parseFloat(e.target.value);render();saveSoon();});
+document.getElementById("latInput").addEventListener("input",e=>{
+  const v=parseFloat(e.target.value);
+  if(!isNaN(v)&&v>=-60&&v<=60){sun.lat=v;render();saveSoon();}});
+
+/* ================================================================ roof height dialog */
+let pendingH=null;
+function openHDialog(zi){
+  pendingH=zi;
+  document.getElementById("hVal").value=zones[zi].h||4;
+  document.getElementById("hDialog").style.display="block";
+  document.getElementById("hVal").focus();
+}
+function hideHDialog(){document.getElementById("hDialog").style.display="none";pendingH=null;}
+document.getElementById("hCancel").onclick=()=>{hideHDialog();render();};
+document.getElementById("hApply").onclick=applyH;
+document.getElementById("hVal").addEventListener("keydown",e=>{if(e.key==="Enter")applyH();});
+function applyH(){
+  const v=parseFloat(document.getElementById("hVal").value);
+  if(pendingH!==null&&zones[pendingH]&&v>0){
+    zones[pendingH].h=v;
+    toast("Roof height set — "+v+" m");
+  }
+  hideHDialog();render();saveSoon();
+}
+
+/* ================================================================ slope arrows */
+function openSlopeDialog(p1,p2){
+  pendingSlope=[p1,p2];
+  const cur=parseFloat(document.getElementById("slope").value);
+  if(cur>0)document.getElementById("slopeVal").value=cur;
+  document.getElementById("slopeDialog").style.display="block";
+  document.getElementById("slopeVal").focus();
+}
+function hideSlopeDialog(){document.getElementById("slopeDialog").style.display="none";}
+document.getElementById("slopeCancel").onclick=()=>{pendingSlope=null;hideSlopeDialog();render();};
+document.getElementById("slopeApply").onclick=applySlope;
+document.getElementById("slopeVal").addEventListener("keydown",e=>{if(e.key==="Enter")applySlope();});
+function applySlope(){
+  const deg=parseFloat(document.getElementById("slopeVal").value);
+  if(!pendingSlope||!(deg>0)){toast("Enter the fall in degrees");return;}
+  snapshot();
+  slopes.push({ax:pendingSlope[0].x,ay:pendingSlope[0].y,
+               bx:pendingSlope[1].x,by:pendingSlope[1].y,deg});
+  document.getElementById("slope").value=deg;   // feed the measure tool too
+  pendingSlope=null;hideSlopeDialog();render();saveSoon();
+  toast(deg+"° fall marked — measure tool slope° set to match");
+}
+
+function drawSlopes(){
+  slopes.forEach((s,si)=>{
+    const g=document.createElementNS(SVGNS,"g");
+    const x1=toScreenX(s.ax),y1=toScreenY(s.ay),x2=toScreenX(s.bx),y2=toScreenY(s.by);
+    const a=Math.atan2(y2-y1,x2-x1);
+    const l=line(x1,y1,x2,y2,C.accentDeep,1.4);
+    g.appendChild(l);
+    // arrowhead at downhill end
+    const ah=document.createElementNS(SVGNS,"path");
+    ah.setAttribute("d",`M ${x2} ${y2} L ${x2-10*Math.cos(a-0.42)} ${y2-10*Math.sin(a-0.42)} L ${x2-10*Math.cos(a+0.42)} ${y2-10*Math.sin(a+0.42)} Z`);
+    ah.setAttribute("fill",C.accentDeep);
+    g.appendChild(ah);
+    // double chevron at tail (map convention for fall)
+    [0.18,0.32].forEach(f=>{
+      const cxp=x1+(x2-x1)*f,cyp=y1+(y2-y1)*f;
+      const ch=document.createElementNS(SVGNS,"path");
+      ch.setAttribute("d",`M ${cxp-6*Math.cos(a-0.5)} ${cyp-6*Math.sin(a-0.5)} L ${cxp} ${cyp} L ${cxp-6*Math.cos(a+0.5)} ${cyp-6*Math.sin(a+0.5)}`);
+      ch.setAttribute("fill","none");ch.setAttribute("stroke",C.accentDeep);ch.setAttribute("stroke-width","1.2");
+      g.appendChild(ch);
+    });
+    const t=text((x1+x2)/2,(y1+y2)/2-9,s.deg+"° FALL",C.accentDeep,9);
+    t.setAttribute("font-family",MONO);t.setAttribute("letter-spacing",".1em");
+    t.setAttribute("stroke",C.paper);t.setAttribute("stroke-width","3");t.setAttribute("paint-order","stroke");
+    g.appendChild(t);
+    svg.appendChild(g);
+
+    // edit handle at midpoint (draw mode)
+    if(mode!=="draw"||drawing)return;
+    const mx=(x1+x2)/2,my=(y1+y2)/2;
+    const mh=document.createElementNS(SVGNS,"rect");
+    mh.setAttribute("x",mx-4.5);mh.setAttribute("y",my-4.5);
+    mh.setAttribute("width",9);mh.setAttribute("height",9);
+    mh.setAttribute("fill",C.accentDeep);mh.setAttribute("stroke",C.paper);mh.setAttribute("stroke-width","1.4");
+    mh.style.cursor="move";
+    mh.addEventListener("pointerdown",e=>{
+      if(e.button!==0)return;
+      e.stopPropagation();snapshot();
+      drag={type:"slope",si,lx:toWorldX(e.clientX),ly:toWorldY(e.clientY),moved:false};
+      svg.setPointerCapture(e.pointerId);
+    });
+    mh.addEventListener("contextmenu",e=>{
+      e.preventDefault();e.stopPropagation();
+      snapshot();slopes.splice(si,1);render();saveSoon();
+      toast("Slope marker removed");
+    });
+    svg.appendChild(mh);
+  });
+}
+
 /* ================================================================ render */
 function render(){
   while(svg.firstChild)svg.removeChild(svg.firstChild);
@@ -616,6 +892,8 @@ function render(){
   drawOrigin();
   if(!plants.length&&!underlay&&!zones.length)drawEmptyState(W,H);
   zones.forEach((z,i)=>drawZone(z,i));
+  drawShadows();
+  drawSlopes();
   plants.forEach((p,i)=>drawPlant(p,i));
   measurements.forEach(m=>drawMeasure(m));
   drawPending();
@@ -726,6 +1004,7 @@ function drawZone(z,zi){
   if(wpx>46){
     let lbl=st.label.toUpperCase()+" · "+(area<10?area.toFixed(1):Math.round(area))+" m²";
     if(z.type==="boundary")lbl+=" · "+Math.round(polyPerim(z.pts))+" m";
+    if(z.type==="structure"&&z.h)lbl+=" · "+z.h+" m roof";
     const t=text(toScreenX(c.x),toScreenY(c.y),lbl,st.color,9);
     t.setAttribute("font-family",MONO);t.setAttribute("letter-spacing",".08em");
     t.setAttribute("stroke",C.paper);t.setAttribute("stroke-width","3");t.setAttribute("paint-order","stroke");
@@ -830,29 +1109,89 @@ function drawDrawingPreview(){
 function finishDrawing(){
   if(drawing&&drawing.length>=3){
     snapshot();
-    zones.push({type:drawType,pts:drawing});
+    const z={type:drawType,pts:drawing};
+    if(drawType==="structure")z.h=4;
+    zones.push(z);
     const st=ZS[drawType];
     toast(st.label+" added — "+Math.round(polyArea(drawing))+" m²");
+    if(drawType==="structure")openHDialog(zones.length-1);
   }
   drawing=null;render();saveSoon();
+}
+
+/* organic canopy outline — radius modulated by seeded sinusoids */
+function canopyD(cx,cy,R,seed,form){
+  const rnd=mulberry32(seed);
+  const waves=form==="tuft"?[[.12,9],[.09,15],[.05,23]]:[[.05,3],[.045,7],[.03,13]];
+  const ph=waves.map(()=>rnd()*Math.PI*2);
+  const N=form==="tuft"?72:52;
+  let d="";
+  for(let i=0;i<N;i++){
+    const th=i/N*2*Math.PI;
+    let f=1;
+    waves.forEach((w,j)=>{f+=w[0]*Math.sin(w[1]*th+ph[j]);});
+    d+=(i?"L":"M")+(cx+R*f*Math.cos(th)).toFixed(1)+" "+(cy+R*f*Math.sin(th)).toFixed(1);
+  }
+  return d+"Z";
 }
 
 function drawPlant(p,i){
   const g=document.createElementNS(SVGNS,"g");
   g.style.cursor=mode==="plant"?"grab":"crosshair";
   const cx=toScreenX(p.x),cy=toScreenY(p.y),r=(p.spread/2)*view.ppm;
+  const seed=plantSeed(p),form=plantForm(p);
+  const rnd=mulberry32(seed+7);
 
-  const c=document.createElementNS(SVGNS,"circle");
-  c.setAttribute("cx",cx);c.setAttribute("cy",cy);c.setAttribute("r",r);
-  c.setAttribute("fill",p.hue);c.setAttribute("fill-opacity",underlay?".32":".22");
-  c.setAttribute("stroke",p.hue);c.setAttribute("stroke-width","1.3");
-  g.appendChild(c);
+  // true-scale ring (the honest footprint, faint)
+  const ring=document.createElementNS(SVGNS,"circle");
+  ring.setAttribute("cx",cx);ring.setAttribute("cy",cy);ring.setAttribute("r",r);
+  ring.setAttribute("fill","none");ring.setAttribute("stroke",p.hue);
+  ring.setAttribute("stroke-width",".6");ring.setAttribute("opacity",".4");
+  ring.setAttribute("stroke-dasharray","1.5 3");
+  g.appendChild(ring);
 
-  // landscape-plan symbol: centre dot + one radius tick
-  const a=rad(-45);
-  const tick=line(cx,cy,cx+r*Math.cos(a),cy+r*Math.sin(a),p.hue,.8);
-  tick.setAttribute("opacity",".55");
-  g.appendChild(tick);
+  // organic canopy
+  const cp=document.createElementNS(SVGNS,"path");
+  cp.setAttribute("d",canopyD(cx,cy,r*.97,seed,form));
+  cp.setAttribute("fill",p.hue);cp.setAttribute("fill-opacity",underlay?".34":".26");
+  cp.setAttribute("stroke",p.hue);cp.setAttribute("stroke-width","1.3");
+  cp.setAttribute("stroke-linejoin","round");
+  g.appendChild(cp);
+
+  if(form==="tuft"){
+    // strappy blades from the crown
+    const n=7+Math.floor(rnd()*4);
+    for(let k=0;k<n;k++){
+      const a=rnd()*Math.PI*2,len=r*(0.45+rnd()*0.4);
+      const bend=(rnd()-0.5)*r*0.35;
+      const bl=document.createElementNS(SVGNS,"path");
+      bl.setAttribute("d",`M ${cx} ${cy} Q ${cx+len*0.55*Math.cos(a)+bend*Math.sin(a)} ${cy+len*0.55*Math.sin(a)-bend*Math.cos(a)} ${cx+len*Math.cos(a)} ${cy+len*Math.sin(a)}`);
+      bl.setAttribute("fill","none");bl.setAttribute("stroke",p.hue);
+      bl.setAttribute("stroke-width",".9");bl.setAttribute("opacity",".5");
+      g.appendChild(bl);
+    }
+  }else{
+    // branch skeleton, landscape-plan style
+    const n=4+Math.floor(rnd()*3);
+    for(let k=0;k<n;k++){
+      const a=(k/n)*Math.PI*2+rnd()*0.9;
+      const len=r*(0.55+rnd()*0.3);
+      const br=document.createElementNS(SVGNS,"path");
+      br.setAttribute("d",`M ${cx} ${cy} Q ${cx+len*0.5*Math.cos(a+0.18)} ${cy+len*0.5*Math.sin(a+0.18)} ${cx+len*Math.cos(a)} ${cy+len*Math.sin(a)}`);
+      br.setAttribute("fill","none");br.setAttribute("stroke",p.hue);
+      br.setAttribute("stroke-width",".8");br.setAttribute("opacity",".35");
+      g.appendChild(br);
+      // secondary twig
+      if(r>18){
+        const a2=a+(rnd()-0.5)*0.9,l2=len*0.55;
+        const mx2=cx+len*0.55*Math.cos(a),my2=cy+len*0.55*Math.sin(a);
+        const tw=line(mx2,my2,mx2+l2*0.5*Math.cos(a2),my2+l2*0.5*Math.sin(a2),p.hue,.6);
+        tw.setAttribute("opacity",".3");
+        g.appendChild(tw);
+      }
+    }
+  }
+
   const dot=document.createElementNS(SVGNS,"circle");
   dot.setAttribute("cx",cx);dot.setAttribute("cy",cy);dot.setAttribute("r","2.1");
   dot.setAttribute("fill",p.hue);
@@ -866,6 +1205,31 @@ function drawPlant(p,i){
     g.appendChild(t);
   }
 
+  // selection: accent ring + delete button
+  if(i===selected&&mode==="plant"){
+    const sel=document.createElementNS(SVGNS,"circle");
+    sel.setAttribute("cx",cx);sel.setAttribute("cy",cy);sel.setAttribute("r",r+4);
+    sel.setAttribute("fill","none");sel.setAttribute("stroke",C.accent);
+    sel.setAttribute("stroke-width","1.4");sel.setAttribute("stroke-dasharray","6 4");
+    g.appendChild(sel);
+    const bx=cx,by=cy-r-14;
+    const del=document.createElementNS(SVGNS,"g");
+    del.style.cursor="pointer";
+    const dc=document.createElementNS(SVGNS,"circle");
+    dc.setAttribute("cx",bx);dc.setAttribute("cy",by);dc.setAttribute("r","8.5");
+    dc.setAttribute("fill",C.accent);dc.setAttribute("stroke",C.paper);dc.setAttribute("stroke-width","1.5");
+    del.appendChild(dc);
+    const dx1=text(bx,by+3.5,"×",C.paper,12);
+    dx1.setAttribute("font-family",MONO);
+    del.appendChild(dx1);
+    del.addEventListener("pointerdown",e=>{
+      e.stopPropagation();
+      snapshot();plants.splice(i,1);selected=null;render();saveSoon();
+      toast(p.name+" removed");
+    });
+    g.appendChild(del);
+  }
+
   g.addEventListener("pointerdown",e=>{
     if(mode!=="plant")return;
     if(e.button===2)return;
@@ -876,7 +1240,7 @@ function drawPlant(p,i){
   });
   g.addEventListener("contextmenu",e=>{
     e.preventDefault();
-    if(mode==="plant"){snapshot();plants.splice(i,1);render();saveSoon();}
+    if(mode==="plant"){snapshot();plants.splice(i,1);selected=null;render();saveSoon();}
   });
   svg.appendChild(g);
 }
@@ -1123,6 +1487,14 @@ svg.addEventListener("pointermove",e=>{
       zones[drag.zi].pts.forEach(p=>{p.x+=dx;p.y+=dy;});
       drag.lx=wx;drag.ly=wy;
       render();
+    }else if(drag.type==="slope"){
+      drag.moved=true;
+      const wx=toWorldX(e.clientX),wy=toWorldY(e.clientY);
+      const dx=wx-drag.lx,dy=wy-drag.ly;
+      const s=slopes[drag.si];
+      s.ax+=dx;s.ay+=dy;s.bx+=dx;s.by+=dy;
+      drag.lx=wx;drag.ly=wy;
+      render();
     }
   }else{render();}          // ghost follows cursor
 });
@@ -1133,16 +1505,26 @@ svg.addEventListener("pointerup",e=>{
   ptrs.delete(e.pointerId);
   if(pinch){if(ptrs.size<2)pinch=null;saveSoon();return;}
   const wasClick=drag&&drag.type==="pan"&&!drag.moved;
-  if(drag&&(drag.type==="plant"||drag.type==="vertex"||drag.type==="zone")){
-    if(!drag.moved)history.pop();      // drag never moved — drop its snapshot
+  if(drag&&(drag.type==="plant"||drag.type==="vertex"||drag.type==="zone"||drag.type==="slope")){
+    if(!drag.moved){
+      history.pop();                   // drag never moved — drop its snapshot
+      if(drag.type==="plant"){         // …it was a click: toggle selection
+        selected=selected===drag.i?null:drag.i;
+        render();
+      }else if(drag.type==="zone"&&zones[drag.zi]&&zones[drag.zi].type==="structure"){
+        openHDialog(drag.zi);          // click house handle → set roof height
+      }
+    }
     updateHistoryButtons();saveSoon();
   }
   drag=null;
   if(!wasClick){if(drag===null)saveSoon();return;}
   const wx=toWorldX(e.clientX),wy=toWorldY(e.clientY);
   if(mode==="plant"){
+    if(selected!==null){selected=null;render();return;}   // click ground = deselect first
     snapshot();
-    plants.push({x:wx,y:wy,name:active.name,spread:active.spread,hue:active.hue});
+    plants.push({x:wx,y:wy,name:active.name,spread:active.spread,hue:active.hue,
+      h:active.h,seed:Math.floor(Math.random()*1e9)});
     render();saveSoon();
   }else if(mode==="measure"){
     if(!pending)pending={x:wx,y:wy};
@@ -1157,6 +1539,11 @@ svg.addEventListener("pointerup",e=>{
   }else if(mode==="draw"){
     let px=wx,py=wy;
     if(e.shiftKey){px=Math.round(px*2)/2;py=Math.round(py*2)/2;}
+    if(drawType==="slope"){
+      if(!pending)pending={x:px,y:py};
+      else{openSlopeDialog(pending,{x:px,y:py});pending=null;}
+      render();return;
+    }
     if(!drawing){drawing=[{x:px,y:py}];}
     else{
       const p0=drawing[0];
@@ -1191,16 +1578,24 @@ window.addEventListener("keydown",e=>{
   const typing=/^(INPUT|TEXTAREA)$/.test(e.target.tagName);
   if(e.key==="Escape"){
     if(drawing){drawing=null;render();return;}   // cancel polygon, stay in draw mode
-    pending=null;pendingCal=null;hideCalDialog();setMode("plant");return;
+    if(selected!==null){selected=null;render();return;}
+    pending=null;pendingCal=null;pendingSlope=null;
+    hideCalDialog();hideSlopeDialog();hideHDialog();setMode("plant");return;
   }
   if(e.key==="Enter"&&mode==="draw"&&drawing&&drawing.length>=3){finishDrawing();return;}
   if(typing)return;
+  if((e.key==="Delete"||e.key==="Backspace")&&selected!==null&&mode==="plant"){
+    snapshot();
+    toast(plants[selected].name+" removed");
+    plants.splice(selected,1);selected=null;render();saveSoon();return;
+  }
   if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==="z"){e.preventDefault();undo();return;}
   if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==="y"||(e.shiftKey&&e.key.toLowerCase()==="z"))){e.preventDefault();redo();return;}
   if(e.key==="p")setMode("plant");
   if(e.key==="m")setMode("measure");
   if(e.key==="c")setMode("calibrate");
   if(e.key==="d")setMode("draw");
+  if(e.key==="s")document.getElementById("sunBtn").click();
 });
 window.addEventListener("resize",render);
 
@@ -1221,6 +1616,7 @@ if(!load()){
 }
 buildPalette();
 buildZoneRow();
+syncSunUI();
 render();
 
 if("serviceWorker" in navigator&&location.protocol.startsWith("http")){

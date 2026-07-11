@@ -20,6 +20,14 @@ mistakes are visible years before they happen in the ground.
    live areas (order turf and mulch straight off the plan). Segment lengths show while
    you trace; drag handles to adjust; `Shift` snaps to 0.5 m.
 5. **Measure** anywhere — distances reported on plan and, with a slope set, along the ground.
+   Mark the fall itself with **slope arrows** (uphill → downhill, labelled in degrees).
+6. **Sun & shade** — real solar geometry for your latitude casts shadow footprints from
+   house roofs (the aerial shows the roof outline — trace it, give it a height) and from
+   every tree at its mature height. Winter/equinox/summer, any time of day. Plant
+   placement becomes a decision about light, not a guess.
+
+Plants render as organic hand-drawn canopies (a faint dashed ring marks the honest
+mature-spread footprint). Click a plant to select it — Delete or the × removes it.
 
 Undo/redo, PNG export with an architect's title block, and everything autosaves locally.
 Single-file, offline-first PWA — no accounts, no server, your plan never leaves the browser.
