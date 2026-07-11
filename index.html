@@ -146,9 +146,70 @@
   .zoneRow{
     display:none;flex-basis:100%;justify-content:center;gap:2px;flex-wrap:wrap;
     padding-top:5px;margin-top:4px;border-top:1px solid var(--paper-edge);
+    align-items:center;
   }
   .zoneRow.show{display:flex}
   .zchip{width:9px;height:9px;border-radius:2px;border:1px solid;flex:0 0 auto}
+  #mapRow input{
+    width:190px;font-family:var(--mono);font-size:11px;padding:4px 8px;
+    border:1px solid var(--paper-edge);border-radius:6px;background:rgba(255,255,255,.5);
+    color:var(--ink);outline:none;
+  }
+  #mapRow input:focus{border-color:var(--accent)}
+
+  /* ---- plant edit popover ---- */
+  #plantPop{
+    position:fixed;display:none;z-index:25;width:190px;
+    background:var(--panel);border:1px solid var(--paper-edge);border-radius:10px;
+    box-shadow:0 6px 24px rgba(60,50,30,.18);padding:11px 12px;
+  }
+  #plantPop input{
+    font-family:var(--mono);font-size:11px;color:var(--ink);outline:none;
+    border:1px solid var(--paper-edge);border-radius:5px;background:rgba(255,255,255,.5);
+    padding:4px 6px;
+  }
+  #plantPop input:focus{border-color:var(--accent)}
+  #ppName{width:100%;font-family:var(--serif);font-style:italic;font-size:13px;margin-bottom:7px}
+  #plantPop .pprow{
+    display:flex;align-items:center;justify-content:space-between;margin:5px 0;
+    font-family:var(--mono);font-size:9.5px;color:var(--ink-soft);letter-spacing:.06em;
+  }
+  #plantPop .pprow input{width:58px;text-align:right}
+  #ppNote{width:100%;margin-top:6px}
+  #plantPop .ppbtns{display:flex;justify-content:space-between;margin-top:9px}
+  #plantPop .ppbtns button{
+    font-family:var(--mono);font-size:10px;letter-spacing:.05em;cursor:pointer;
+    border:1px solid var(--paper-edge);background:transparent;color:var(--ink);
+    border-radius:6px;padding:4px 11px;
+  }
+  #plantPop .ppbtns #ppRemove{color:var(--measure);border-color:rgba(176,80,42,.4)}
+  #plantPop .ppbtns #ppDone{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+
+  /* ---- schedule table ---- */
+  #schedule{
+    margin-top:10px;max-height:220px;overflow-y:auto;
+    font-family:var(--mono);font-size:10px;letter-spacing:.02em;
+  }
+  #schedule table{width:100%;border-collapse:collapse}
+  #schedule th{
+    text-align:left;font-weight:500;color:var(--accent-deep);font-size:9px;
+    text-transform:uppercase;letter-spacing:.1em;padding:3px 6px 5px 0;
+    border-bottom:1px solid var(--paper-edge);
+  }
+  #schedule td{padding:4px 6px 4px 0;border-bottom:1px solid rgba(222,210,182,.5);vertical-align:top}
+  #schedule .qty{text-align:right;font-weight:500}
+
+  /* ---- heat legend ---- */
+  #heatLegend{display:none;margin-top:7px}
+  #heatLegend .bar{
+    height:8px;border-radius:4px;border:1px solid var(--paper-edge);
+    background:linear-gradient(90deg,rgba(58,52,38,.52),rgba(58,52,38,0));
+  }
+  #heatLegend .lab{
+    display:flex;justify-content:space-between;
+    font-family:var(--mono);font-size:8.5px;color:var(--ink-soft);
+    letter-spacing:.08em;margin-top:3px;
+  }
 
   #paletteToggle{
     display:none;position:fixed;top:14px;left:12px;z-index:30;
@@ -275,6 +336,8 @@
     <button data-mode="draw" title="Draw zones — boundary, house, paths, lawn, beds (D)">
       <svg viewBox="0 0 24 24"><path d="M12 3 21 10l-3.5 10h-11L3 10z"/><circle cx="12" cy="3" r="1.4" fill="currentColor"/><circle cx="21" cy="10" r="1.4" fill="currentColor"/><circle cx="3" cy="10" r="1.4" fill="currentColor"/></svg>draw</button>
     <div class="sep"></div>
+    <button id="mapBtn" title="Live aerial map — search your address, scale is automatic">
+      <svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zm0 0v14m6-12v14"/></svg>map</button>
     <button id="loadBtn" title="Load an aerial image (or just Ctrl+V a screenshot)">
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 3 3 4-4 4 4"/></svg>aerial</button>
     <label id="opacityWrap"><input id="opacity" type="range" min="10" max="100" value="75" title="Underlay opacity"></label>
@@ -292,6 +355,13 @@
     <button id="zoomIn" title="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
     <button id="exportBtn" title="Export the plan as a PNG">
       <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg></button>
+    <button id="fileBtn" title="Plan file — backup, restore, plant schedule">
+      <svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></button>
+    <div class="zoneRow" id="mapRow">
+      <input id="addr" type="text" placeholder="address or place… (Enter to search)" spellcheck="false" autocomplete="off">
+      <button id="addrGo">search</button>
+      <button id="locBtn" title="Use your device location">◎ locate</button>
+    </div>
     <div class="zoneRow" id="zoneRow"></div>
   </div>
 
@@ -305,18 +375,49 @@
       <button data-season="equinox">equinox</button>
       <button data-season="summer">summer</button>
     </div>
+    <div class="seg" id="sunModeSeg">
+      <button data-m="moment" class="active">moment</button>
+      <button data-m="day">day sun-hours</button>
+    </div>
     <input id="sunTime" type="range" min="7" max="19" step="0.5" value="12">
     <div id="sunInfo"></div>
+    <div id="heatLegend">
+      <div class="bar"></div>
+      <div class="lab"><span>FULL SHADE</span><span>FULL SUN</span></div>
+    </div>
     <div class="note">Assumes the plan is north-up ↑ (LISTmap &amp; Google default).
       Shadows cast by house roofs &amp; mature tree heights.
       lat <input id="latInput" type="number" step="0.1" min="-60" max="60" value="-41.4">°
     </div>
   </div>
 
+  <div id="plantPop">
+    <input id="ppName" spellcheck="false" autocomplete="off">
+    <div class="pprow"><span>MATURE SPREAD</span><span><input id="ppSpread" type="number" step="0.1" min="0.2" max="30"> m</span></div>
+    <div class="pprow"><span>MATURE HEIGHT</span><span><input id="ppH" type="number" step="0.1" min="0.1" max="40"> m</span></div>
+    <input id="ppNote" type="text" placeholder="note — variety, task, reminder…" spellcheck="false" autocomplete="off">
+    <div class="ppbtns">
+      <button id="ppRemove">remove</button>
+      <button id="ppDone">done</button>
+    </div>
+  </div>
+
+  <div id="fileDialog" class="dlg">
+    <h2>Plan file &amp; schedule</h2>
+    <div class="btns" style="justify-content:flex-start;flex-wrap:wrap;margin-top:0">
+      <button id="expJson">export plan (.json)</button>
+      <button id="impJson">import plan…</button>
+      <button id="expCsv">schedule (.csv)</button>
+    </div>
+    <div class="note" style="margin:8px 0 0">The plan lives in this browser's storage — export a .json now and then as a backup you can re-import anywhere.</div>
+    <div id="schedule"></div>
+    <div class="btns"><button id="fileClose">close</button></div>
+  </div>
+
   <div id="hDialog" class="dlg">
-    <h2>Roof height</h2>
-    <div class="row"><span>Height above ground</span><span><input id="hVal" type="number" min="1" max="30" step="0.5" value="4"> m</span></div>
-    <div class="note">The aerial shows the roof outline, so you've already traced it — this sets how far its shadow throws. Use a height between eave and ridge (single storey ≈ 3.5–5 m, two storey ≈ 6.5–8 m).</div>
+    <h2 id="hTitle">Roof height</h2>
+    <div class="row"><span>Height above ground</span><span><input id="hVal" type="number" min="0.5" max="30" step="0.1" value="4"> m</span></div>
+    <div class="note" id="hNote">The aerial shows the roof outline, so you've already traced it — this sets how far its shadow throws. Use a height between eave and ridge (single storey ≈ 3.5–5 m, two storey ≈ 6.5–8 m).</div>
     <div class="btns">
       <button id="hCancel">cancel</button>
       <button id="hApply" class="primary">set height</button>
@@ -437,6 +538,7 @@ const byName=n=>CATALOGUE.find(c=>c.name===n);
 const ZS={
   boundary:{label:"boundary", color:"#322d24", fill:"none",                dash:"11 6", width:1.8},
   structure:{label:"house",   color:"#5a5142", fill:"#e8dfc8", fillOp:1,   hatch:true,  width:1.4},
+  fence:{label:"fence",       color:"#6b5f4c", fill:"none",    open:true,  width:1.6},
   path:{label:"path",         color:"#8a7a5c", fill:"#ddd0ad", fillOp:.9,  width:1},
   lawn:{label:"lawn",         color:"#7a9455", fill:"#a8bd7f", fillOp:.38, width:1},
   bed:{label:"bed",           color:"#96703f", fill:"#b08a5e", fillOp:.3,  width:1},
@@ -459,7 +561,8 @@ let pendingSlope=null;        // [p1,p2] awaiting degrees
 let lastPtr=null;
 let planTitle="";
 let selected=null;            // selected plant index (plant mode)
-let sun={on:false,season:"winter",time:12,lat:-41.4};
+let sun={on:false,season:"winter",time:12,lat:-41.4,mode:"moment"};
+let basemap={on:false,lat0:null,lon0:null};   // live tile underlay; world origin ↔ (lat0,lon0)
 let active=CATALOGUE.find(p=>p.name==="Silver birch");
 
 /* deterministic per-plant randomness for organic canopy outlines */
@@ -508,7 +611,7 @@ const OLD_KEY="siteplan.pinetree.v1";
 let saveTimer=null;
 function saveSoon(){clearTimeout(saveTimer);saveTimer=setTimeout(save,600);}
 function save(){
-  const data={plants,measurements,zones,slopes,sun,view,planTitle,underlay:underlay?{...underlay}:null};
+  const data={plants,measurements,zones,slopes,sun,basemap,view,planTitle,underlay:underlay?{...underlay}:null};
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(data));}
   catch(e){
     if(data.underlay)data.underlay={...data.underlay,dataURL:null};
@@ -526,6 +629,7 @@ function load(){
     if(!d)return false;
     plants=d.plants||[];measurements=d.measurements||[];zones=d.zones||[];slopes=d.slopes||[];
     if(d.sun)Object.assign(sun,d.sun);
+    if(d.basemap)Object.assign(basemap,d.basemap);
     Object.assign(view,d.view||{});
     planTitle=d.planTitle||"";
     document.getElementById("planTitle").value=planTitle;
@@ -572,8 +676,10 @@ function setMode(m){
   document.querySelectorAll("#toolbar button[data-mode]").forEach(b=>
     b.classList.toggle("active",b.dataset.mode===m));
   document.getElementById("zoneRow").classList.toggle("show",m==="draw");
-  if(m==="calibrate"&&!underlay)toast("Load or paste an aerial image first, then calibrate");
-  if(m==="calibrate"&&underlay)toast("Click the two ends of something whose length you know — a fence, a wall, or the map's scale bar");
+  document.getElementById("fileDialog").style.display="none";
+  if(m==="calibrate"&&basemap.on)toast("The live map is already true to scale — calibration only rescales a pasted image");
+  else if(m==="calibrate"&&!underlay)toast("Load or paste an aerial image first, then calibrate");
+  else if(m==="calibrate"&&underlay)toast("Click the two ends of something whose length you know — a fence, a wall, or the map's scale bar");
   if(m==="measure")toast("Click two points to measure · right-click clears measurements");
   if(m==="draw")toast("Click to place corners · click the first corner (or press Enter) to close · Shift snaps to 0.5 m · drag handles to adjust");
   render();
@@ -653,6 +759,98 @@ window.addEventListener("drop",e=>{
   if(f)loadUnderlayFile(f);
 });
 
+/* ================================================================ live basemap
+   Open tile services: LIST orthophoto (Tasmania, © State of Tasmania CC-BY)
+   with Esri World Imagery elsewhere. World origin (0,0 m) is anchored at
+   (lat0,lon0); scale comes from the projection — no calibration needed. */
+const MERC_R=6378137, MERC_MAX=Math.PI*MERC_R;
+const mercFromLatLon=(lat,lon)=>({mx:MERC_R*rad(lon),my:MERC_R*Math.log(Math.tan(Math.PI/4+rad(lat)/2))});
+const inTasmania=()=>basemap.lat0>-44.3&&basemap.lat0<-39.2&&basemap.lon0>143.4&&basemap.lon0<149.3;
+
+function drawBasemap(W,H){
+  if(!basemap.on||basemap.lat0==null)return;
+  const cosf=Math.cos(rad(basemap.lat0));
+  const a=mercFromLatLon(basemap.lat0,basemap.lon0);
+  const tas=inTasmania(), maxZ=tas?20:19;
+  let z=Math.round(Math.log2(156543.03392*cosf*view.ppm));
+  z=Math.max(3,Math.min(maxZ,z));
+  const n=2**z, tileMerc=2*MERC_MAX/n;
+  const mxMin=a.mx+toWorldX(0)/cosf,  mxMax=a.mx+toWorldX(W)/cosf;
+  const myTop=a.my-toWorldY(0)/cosf,  myBot=a.my-toWorldY(H)/cosf;
+  const txMin=Math.floor((mxMin+MERC_MAX)/tileMerc), txMax=Math.floor((mxMax+MERC_MAX)/tileMerc);
+  const tyMin=Math.floor((MERC_MAX-myTop)/tileMerc), tyMax=Math.floor((MERC_MAX-myBot)/tileMerc);
+  const g=document.createElementNS(SVGNS,"g");
+  for(let tx=txMin;tx<=txMax;tx++)for(let ty=tyMin;ty<=tyMax;ty++){
+    if(tx<0||ty<0||tx>=n||ty>=n)continue;
+    const mx1=tx*tileMerc-MERC_MAX, my1=MERC_MAX-ty*tileMerc;   // tile top-left, mercator m
+    const sx=toScreenX((mx1-a.mx)*cosf), sy=toScreenY((a.my-my1)*cosf);
+    const sz=tileMerc*cosf*view.ppm;
+    const url=tas
+      ?`https://services.thelist.tas.gov.au/arcgis/rest/services/Basemaps/Orthophoto/MapServer/tile/${z}/${ty}/${tx}`
+      :`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${ty}/${tx}`;
+    const im=document.createElementNS(SVGNS,"image");
+    im.setAttribute("href",url);
+    im.setAttribute("x",sx);im.setAttribute("y",sy);
+    im.setAttribute("width",sz+0.7);im.setAttribute("height",sz+0.7);
+    im.setAttribute("preserveAspectRatio","none");
+    g.appendChild(im);
+  }
+  svg.appendChild(g);
+}
+function drawAttribution(W,H){
+  if(!basemap.on||basemap.lat0==null)return;
+  const ax=window.innerWidth>760?254:8;
+  const at=text(ax,H-8,inTasmania()?"IMAGERY © STATE OF TASMANIA / THELIST (CC-BY)":"IMAGERY © ESRI & CONTRIBUTORS",C.inkSoft,7.5);
+  at.setAttribute("text-anchor","start");at.setAttribute("font-family",MONO);
+  at.setAttribute("letter-spacing",".08em");
+  at.setAttribute("stroke",C.paper);at.setAttribute("stroke-width","2.5");at.setAttribute("paint-order","stroke");
+  svg.appendChild(at);
+}
+
+function setAnchor(lat,lon,label){
+  basemap.on=true;basemap.lat0=lat;basemap.lon0=lon;
+  sun.lat=Math.round(lat*10)/10;
+  view.ox=(svg.clientWidth+(window.innerWidth>760?242:0))/2;
+  view.oy=svg.clientHeight/2;
+  if(view.ppm<8)view.ppm=26;
+  syncSunUI();syncMapUI();render();saveSoon();
+  toast("Live aerial — "+(label||lat.toFixed(4)+", "+lon.toFixed(4))+". Scale is automatic; no calibration needed.");
+}
+async function geocode(q){
+  if(!q.trim())return;
+  toast("Searching…");
+  try{
+    const r=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(q));
+    const j=await r.json();
+    if(!j.length){toast("No result — try adding the suburb or state");return;}
+    setAnchor(+j[0].lat,+j[0].lon,(j[0].display_name||"").split(",").slice(0,2).join(","));
+  }catch(e){toast("Search failed — check your connection");}
+}
+function syncMapUI(){
+  document.getElementById("mapBtn").classList.toggle("active",basemap.on);
+  document.getElementById("mapRow").classList.toggle("show",basemap.on);
+}
+document.getElementById("mapBtn").onclick=()=>{
+  basemap.on=!basemap.on;
+  syncMapUI();render();saveSoon();
+  if(basemap.on&&basemap.lat0==null){
+    document.getElementById("addr").focus();
+    toast("Type your address and press Enter — or hit ◎ locate");
+  }
+};
+document.getElementById("addrGo").onclick=()=>geocode(document.getElementById("addr").value);
+document.getElementById("addr").addEventListener("keydown",e=>{
+  if(e.key==="Enter")geocode(e.target.value);
+});
+document.getElementById("locBtn").onclick=()=>{
+  if(!navigator.geolocation){toast("No geolocation on this device — search your address instead");return;}
+  toast("Locating…");
+  navigator.geolocation.getCurrentPosition(
+    pos=>setAnchor(pos.coords.latitude,pos.coords.longitude,"your location"),
+    ()=>toast("Location unavailable — search your address instead"),
+    {enableHighAccuracy:true,timeout:10000});
+};
+
 /* ================================================================ calibration */
 const calDialog=document.getElementById("calDialog");
 function openCalDialog(p1,p2){
@@ -703,45 +901,133 @@ function shadowVec(){
   return {dx:Math.sin(azS)*perM, dy:-Math.cos(azS)*perM, el, az};
 }
 
+/* every shadow-casting shape at a given sun vector, in world metres */
+function computeShapes(v){
+  const polys=[],discs=[];
+  zones.forEach(z=>{
+    if(z.type==="structure"){
+      const h=z.h||4,ox=v.dx*h,oy=v.dy*h;
+      const off=z.pts.map(p=>({x:p.x+ox,y:p.y+oy}));
+      polys.push(z.pts,off);
+      for(let i=0;i<z.pts.length;i++){
+        const a=z.pts[i],b=z.pts[(i+1)%z.pts.length];
+        polys.push([a,b,off[(i+1)%z.pts.length],off[i]]);
+      }
+    }else if(z.type==="fence"){
+      const h=z.h||1.8,ox=v.dx*h,oy=v.dy*h;
+      const off=z.pts.map(p=>({x:p.x+ox,y:p.y+oy}));
+      for(let i=0;i<z.pts.length-1;i++)
+        polys.push([z.pts[i],z.pts[i+1],off[i+1],off[i]]);
+    }
+  });
+  plants.forEach(p=>{
+    const h=plantH(p);
+    if(h<0.5)return;
+    discs.push({x:p.x+v.dx*h*0.7,y:p.y+v.dy*h*0.7,r:p.spread/2});
+  });
+  return{polys,discs};
+}
+function pip(x,y,pts){          // point in polygon
+  let inside=false;
+  for(let i=0,j=pts.length-1;i<pts.length;j=i++){
+    const xi=pts[i].x,yi=pts[i].y,xj=pts[j].x,yj=pts[j].y;
+    if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
+}
+
 function drawShadows(){
   if(!sun.on)return;
+  if(sun.mode==="day"){drawHeat();return;}
   const v=shadowVec();
   updateSunInfo(v);
   if(!v)return;
+  const shapes=computeShapes(v);
   const g=document.createElementNS(SVGNS,"g");
   g.setAttribute("opacity",".17");      // children opaque → overlaps union, not stack
   g.setAttribute("pointer-events","none");
   const SH="#3a3426";
-
-  // structures: footprint ∪ offset footprint ∪ edge quads
-  zones.filter(z=>z.type==="structure").forEach(z=>{
-    const h=z.h||4;
-    const ox=v.dx*h,oy=v.dy*h;
-    const off=z.pts.map(p=>({x:p.x+ox,y:p.y+oy}));
-    const add=pts=>{
-      const p=document.createElementNS(SVGNS,"path");
-      p.setAttribute("d",pathD(pts,true));p.setAttribute("fill",SH);
-      g.appendChild(p);
-    };
-    add(z.pts);add(off);
-    for(let i=0;i<z.pts.length;i++){
-      const a=z.pts[i],b=z.pts[(i+1)%z.pts.length];
-      add([a,b,off[(i+1)%z.pts.length],off[i]]);
-    }
+  shapes.polys.forEach(pts=>{
+    const p=document.createElementNS(SVGNS,"path");
+    p.setAttribute("d",pathD(pts,true));p.setAttribute("fill",SH);
+    g.appendChild(p);
   });
-
-  // trees: canopy disc cast from ~0.7 × height (canopy centre)
-  plants.forEach(p=>{
-    const h=plantH(p);
-    if(h<0.5)return;
+  shapes.discs.forEach(d=>{
     const c=document.createElementNS(SVGNS,"circle");
-    c.setAttribute("cx",toScreenX(p.x+v.dx*h*0.7));
-    c.setAttribute("cy",toScreenY(p.y+v.dy*h*0.7));
-    c.setAttribute("r",(p.spread/2)*view.ppm);
-    c.setAttribute("fill",SH);
+    c.setAttribute("cx",toScreenX(d.x));c.setAttribute("cy",toScreenY(d.y));
+    c.setAttribute("r",d.r*view.ppm);c.setAttribute("fill",SH);
     g.appendChild(c);
   });
   svg.appendChild(g);
+}
+
+/* ---- day sun-hours heatmap: sample the whole day, wash shade onto the ground ---- */
+let heatCache=null;
+function heatBounds(){
+  const b=zones.find(z=>z.type==="boundary");
+  let pts=[];
+  if(b)pts=b.pts;
+  else{
+    zones.forEach(z=>pts.push(...z.pts));
+    plants.forEach(p=>pts.push({x:p.x-p.spread/2,y:p.y-p.spread/2},{x:p.x+p.spread/2,y:p.y+p.spread/2}));
+  }
+  if(!pts.length)return null;
+  const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
+  return{x0:Math.floor(Math.min(...xs))-3,y0:Math.floor(Math.min(...ys))-3,
+         x1:Math.ceil(Math.max(...xs))+3,y1:Math.ceil(Math.max(...ys))+3};
+}
+function drawHeat(){
+  const hb=heatBounds();
+  if(!hb){
+    document.getElementById("sunInfo").innerHTML="draw a boundary, house or plants first —<br>then the day map has something to shade";
+    return;
+  }
+  let cell=0.5;
+  let cols=Math.ceil((hb.x1-hb.x0)/cell),rows=Math.ceil((hb.y1-hb.y0)/cell);
+  while(cols*rows>42000){cell*=1.5;cols=Math.ceil((hb.x1-hb.x0)/cell);rows=Math.ceil((hb.y1-hb.y0)/cell);}
+  const key=JSON.stringify([sun.season,sun.lat,cell,hb,
+    zones.filter(z=>z.type==="structure"||z.type==="fence").map(z=>[z.type,z.h,z.pts]),
+    plants.map(p=>[p.x,p.y,p.spread,plantH(p)])]);
+  if(!heatCache||heatCache.key!==key){
+    const savedT=sun.time,samples=[];
+    for(let t=5;t<=21;t+=0.5){
+      sun.time=t;
+      const v=shadowVec();
+      if(v)samples.push(computeShapes(v));
+    }
+    sun.time=savedT;
+    const dayH=samples.length*0.5;
+    const cv=document.createElement("canvas");cv.width=cols;cv.height=rows;
+    const ctx=cv.getContext("2d");
+    const img=ctx.createImageData(cols,rows);
+    for(let r0=0;r0<rows;r0++)for(let c0=0;c0<cols;c0++){
+      const x=hb.x0+(c0+0.5)*cell,y=hb.y0+(r0+0.5)*cell;
+      let shaded=0;
+      for(const s of samples){
+        let hit=false;
+        for(const d of s.discs){const dx=x-d.x,dy=y-d.y;if(dx*dx+dy*dy<d.r*d.r){hit=true;break;}}
+        if(!hit)for(const poly of s.polys){if(pip(x,y,poly)){hit=true;break;}}
+        if(hit)shaded++;
+      }
+      const sunH=(samples.length-shaded)*0.5;
+      const a=Math.pow(1-sunH/dayH,1.2)*0.52;
+      const idx=(r0*cols+c0)*4;
+      img.data[idx]=58;img.data[idx+1]=52;img.data[idx+2]=38;
+      img.data[idx+3]=Math.round(a*255);
+    }
+    ctx.putImageData(img,0,0);
+    heatCache={key,url:cv.toDataURL(),dayH,hb:{...hb}};
+  }
+  const im=document.createElementNS(SVGNS,"image");
+  im.setAttribute("href",heatCache.url);
+  im.setAttribute("x",toScreenX(hb.x0));im.setAttribute("y",toScreenY(hb.y0));
+  im.setAttribute("width",(hb.x1-hb.x0)*view.ppm);
+  im.setAttribute("height",(hb.y1-hb.y0)*view.ppm);
+  im.setAttribute("preserveAspectRatio","none");
+  im.setAttribute("pointer-events","none");
+  svg.appendChild(im);
+  document.getElementById("sunInfo").innerHTML=
+    `${sun.season} day · ${heatCache.dayH.toFixed(1)} h possible sun<br>dark wash = hours lost to shade`;
 }
 
 function fmtTime(t){
@@ -762,9 +1048,16 @@ function syncSunUI(){
   document.getElementById("sunPanel").classList.toggle("show",sun.on);
   document.querySelectorAll("#seasonSeg button").forEach(b=>
     b.classList.toggle("active",b.dataset.season===sun.season));
+  document.querySelectorAll("#sunModeSeg button").forEach(b=>
+    b.classList.toggle("active",b.dataset.m===(sun.mode||"moment")));
   document.getElementById("sunTime").value=sun.time;
+  document.getElementById("sunTime").disabled=sun.mode==="day";
+  document.getElementById("sunTime").style.opacity=sun.mode==="day"?".35":"1";
+  document.getElementById("heatLegend").style.display=sun.mode==="day"?"block":"none";
   document.getElementById("latInput").value=sun.lat;
 }
+document.querySelectorAll("#sunModeSeg button").forEach(b=>
+  b.onclick=()=>{sun.mode=b.dataset.m;syncSunUI();render();saveSoon();});
 document.getElementById("sunBtn").onclick=()=>{
   sun.on=!sun.on;syncSunUI();render();saveSoon();
   if(sun.on)toast("Shadows from house roofs & tree heights — set season and time below left");
@@ -781,7 +1074,12 @@ document.getElementById("latInput").addEventListener("input",e=>{
 let pendingH=null;
 function openHDialog(zi){
   pendingH=zi;
-  document.getElementById("hVal").value=zones[zi].h||4;
+  const isFence=zones[zi].type==="fence";
+  document.getElementById("hTitle").textContent=isFence?"Fence height":"Roof height";
+  document.getElementById("hNote").textContent=isFence
+    ?"Sets how far the fence's shadow throws. A standard paling fence is 1.8 m; a low wall 1 m; hedge-on-fence more."
+    :"The aerial shows the roof outline, so you've already traced it — this sets how far its shadow throws. Use a height between eave and ridge (single storey ≈ 3.5–5 m, two storey ≈ 6.5–8 m).";
+  document.getElementById("hVal").value=zones[zi].h||(isFence?1.8:4);
   document.getElementById("hDialog").style.display="block";
   document.getElementById("hVal").focus();
 }
@@ -797,6 +1095,130 @@ function applyH(){
   }
   hideHDialog();render();saveSoon();
 }
+
+/* ================================================================ plant popover */
+const plantPop=document.getElementById("plantPop");
+let popIdx=null,popSnapped=false;
+function positionPlantPop(){
+  if(mode!=="plant"||selected===null||!plants[selected]){
+    plantPop.style.display="none";popIdx=null;return;
+  }
+  const p=plants[selected];
+  if(popIdx!==selected){          // fresh selection → fill fields
+    popIdx=selected;popSnapped=false;
+    document.getElementById("ppName").value=p.name;
+    document.getElementById("ppSpread").value=p.spread;
+    document.getElementById("ppH").value=plantH(p);
+    document.getElementById("ppNote").value=p.note||"";
+  }
+  const r=(p.spread/2)*view.ppm;
+  let px=toScreenX(p.x)+r+16, py=toScreenY(p.y)-40;
+  px=Math.max(8,Math.min(window.innerWidth-200,px));
+  py=Math.max(8,Math.min(window.innerHeight-190,py));
+  plantPop.style.left=px+"px";plantPop.style.top=py+"px";
+  plantPop.style.display="block";
+}
+function popEdit(fn){
+  if(selected===null||!plants[selected])return;
+  if(!popSnapped){snapshot();popSnapped=true;}
+  fn(plants[selected]);
+  render();saveSoon();
+}
+document.getElementById("ppName").addEventListener("input",e=>popEdit(p=>p.name=e.target.value));
+document.getElementById("ppSpread").addEventListener("input",e=>{
+  const v=parseFloat(e.target.value);
+  if(v>0)popEdit(p=>p.spread=v);
+});
+document.getElementById("ppH").addEventListener("input",e=>{
+  const v=parseFloat(e.target.value);
+  if(v>0)popEdit(p=>p.h=v);
+});
+document.getElementById("ppNote").addEventListener("input",e=>popEdit(p=>p.note=e.target.value));
+document.getElementById("ppDone").onclick=()=>{selected=null;render();};
+document.getElementById("ppRemove").onclick=()=>{
+  if(selected===null)return;
+  snapshot();
+  toast(plants[selected].name+" removed");
+  plants.splice(selected,1);selected=null;render();saveSoon();
+};
+
+/* ================================================================ plan file & schedule */
+const fileDialog=document.getElementById("fileDialog");
+function planData(){
+  return{plants,measurements,zones,slopes,sun,basemap,view,planTitle,
+    underlay:underlay?{...underlay}:null};
+}
+function scheduleRows(){
+  const groups={};
+  plants.forEach(p=>{
+    const k=p.name;
+    if(!groups[k])groups[k]={name:p.name,bot:(byName(p.name)||{}).bot||"",qty:0,
+      spread:p.spread,h:plantH(p),notes:[]};
+    groups[k].qty++;
+    if(p.note)groups[k].notes.push(p.note);
+  });
+  return Object.values(groups).sort((a,b)=>b.qty-a.qty||a.name.localeCompare(b.name));
+}
+function buildSchedule(){
+  const rows=scheduleRows();
+  const el=document.getElementById("schedule");
+  if(!rows.length){el.innerHTML='<div class="note">No plants placed yet.</div>';return;}
+  el.innerHTML="<table><tr><th>plant</th><th class='qty'>qty</th><th>w×h m</th><th>notes</th></tr>"+
+    rows.map(r=>`<tr><td>${r.name}${r.bot?"<br><i style='color:var(--ink-soft)'>"+r.bot+"</i>":""}</td>`+
+      `<td class="qty">${r.qty}</td><td>${r.spread}×${r.h}</td><td>${r.notes.join("; ")}</td></tr>`).join("")+
+    `<tr><td><b>total</b></td><td class="qty"><b>${plants.length}</b></td><td></td><td></td></tr></table>`;
+}
+function downloadBlob(blob,name){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+const planSlug=()=>(planTitle.trim()||"groundwork-plan").toLowerCase().replace(/[^a-z0-9]+/g,"-");
+document.getElementById("fileBtn").onclick=()=>{buildSchedule();fileDialog.style.display="block";};
+document.getElementById("fileClose").onclick=()=>fileDialog.style.display="none";
+document.getElementById("expJson").onclick=()=>{
+  downloadBlob(new Blob([JSON.stringify(planData())],{type:"application/json"}),planSlug()+".json");
+  toast("Plan exported — keep it as a backup");
+};
+document.getElementById("impJson").onclick=()=>{
+  const inp=document.createElement("input");
+  inp.type="file";inp.accept=".json,application/json";
+  inp.onchange=()=>{
+    const f=inp.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{
+      try{
+        const d=JSON.parse(r.result);
+        if(!Array.isArray(d.plants))throw 0;
+        snapshot();
+        plants=d.plants;measurements=d.measurements||[];zones=d.zones||[];slopes=d.slopes||[];
+        if(d.sun)Object.assign(sun,d.sun);
+        if(d.basemap)Object.assign(basemap,d.basemap);
+        if(d.view)Object.assign(view,d.view);
+        planTitle=d.planTitle||"";
+        document.getElementById("planTitle").value=planTitle;
+        underlay=d.underlay&&d.underlay.dataURL?d.underlay:null;
+        if(underlay)showOpacity();
+        selected=null;heatCache=null;
+        syncSunUI();syncMapUI();
+        fileDialog.style.display="none";
+        render();save();
+        toast("Plan imported");
+      }catch(e){toast("That file doesn't look like a Groundwork plan");}
+    };
+    r.readAsText(f);
+  };
+  inp.click();
+};
+document.getElementById("expCsv").onclick=()=>{
+  const rows=scheduleRows();
+  if(!rows.length){toast("No plants to schedule yet");return;}
+  const esc=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  const csv="plant,botanical,qty,spread_m,height_m,notes\n"+
+    rows.map(r=>[esc(r.name),esc(r.bot),r.qty,r.spread,r.h,esc(r.notes.join("; "))].join(",")).join("\n");
+  downloadBlob(new Blob([csv],{type:"text/csv"}),planSlug()+"-schedule.csv");
+  toast("Plant schedule exported");
+};
 
 /* ================================================================ slope arrows */
 function openSlopeDialog(p1,p2){
@@ -876,6 +1298,8 @@ function render(){
   const W=svg.clientWidth,H=svg.clientHeight;
   svg.appendChild(rect(0,0,W,H,C.paper));
 
+  drawBasemap(W,H);
+
   if(underlay){
     const im=document.createElementNS(SVGNS,"image");
     im.setAttribute("href",underlay.dataURL);
@@ -890,7 +1314,7 @@ function render(){
 
   drawGrid(W,H);
   drawOrigin();
-  if(!plants.length&&!underlay&&!zones.length)drawEmptyState(W,H);
+  if(!plants.length&&!underlay&&!zones.length&&!basemap.on)drawEmptyState(W,H);
   zones.forEach((z,i)=>drawZone(z,i));
   drawShadows();
   drawSlopes();
@@ -900,12 +1324,14 @@ function render(){
   drawDrawingPreview();
   drawGhost();
   drawTitleBlock(W,H);
+  drawAttribution(W,H);
+  positionPlantPop();
   updateReadout();
 }
 
 function drawGrid(W,H){
   const g=document.createElementNS(SVGNS,"g");
-  g.setAttribute("opacity",underlay?0.5:1);
+  g.setAttribute("opacity",(underlay||basemap.on)?0.4:1);
   for(let m=Math.floor(toWorldX(0));m<=Math.ceil(toWorldX(W));m++){
     const x=toScreenX(m),major=m%5===0;
     g.appendChild(line(x,0,x,H,major?C.gridMajor:C.grid,major?1:.5));
@@ -928,9 +1354,9 @@ function drawOrigin(){
 function drawEmptyState(W,H){
   const g=document.createElementNS(SVGNS,"g");
   const cx=W/2+(window.innerWidth>760?60:0),cy=H/2-10;
-  const t1=text(cx,cy,"Paste an aerial of your block  ( Ctrl + V )",C.inkSoft,15);
+  const t1=text(cx,cy,"Hit map and search your address — live aerial, true to scale",C.inkSoft,15);
   t1.setAttribute("font-family",SERIF);t1.setAttribute("font-style","italic");
-  const t2=text(cx,cy+26,"— or choose a plant and click the paper —",C.inkSoft,13);
+  const t2=text(cx,cy+26,"— or Ctrl + V a screenshot, or just choose a plant and click the paper —",C.inkSoft,13);
   t2.setAttribute("font-family",SERIF);t2.setAttribute("font-style","italic");
   t2.setAttribute("opacity",".75");
   g.appendChild(t1);g.appendChild(t2);
@@ -973,12 +1399,18 @@ function ensureHatch(){
   svg.appendChild(defs);
 }
 
+function polyLen(pts){
+  let s=0;
+  for(let i=0;i<pts.length-1;i++)s+=Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y);
+  return s;
+}
+
 function drawZone(z,zi){
   const st=ZS[z.type]||ZS.bed;
   const g=document.createElementNS(SVGNS,"g");
-  const d=pathD(z.pts,true);
+  const d=pathD(z.pts,!st.open);
 
-  if(st.fill!=="none"){
+  if(!st.open&&st.fill!=="none"){
     const f=document.createElementNS(SVGNS,"path");
     f.setAttribute("d",d);f.setAttribute("fill",st.fill);
     f.setAttribute("fill-opacity",st.fillOp??1);f.setAttribute("stroke","none");
@@ -997,15 +1429,33 @@ function drawZone(z,zi){
   o.setAttribute("stroke-linejoin","round");
   g.appendChild(o);
 
-  // label with live area
-  const area=polyArea(z.pts);
-  const c=polyCentroid(z.pts);
-  const wpx=area>0?Math.sqrt(area)*view.ppm:0;
-  if(wpx>46){
-    let lbl=st.label.toUpperCase()+" · "+(area<10?area.toFixed(1):Math.round(area))+" m²";
-    if(z.type==="boundary")lbl+=" · "+Math.round(polyPerim(z.pts))+" m";
-    if(z.type==="structure"&&z.h)lbl+=" · "+z.h+" m roof";
-    const t=text(toScreenX(c.x),toScreenY(c.y),lbl,st.color,9);
+  // fence posts: small marks at each vertex
+  if(st.open){
+    z.pts.forEach(p=>{
+      const px=toScreenX(p.x),py=toScreenY(p.y);
+      const post=rect(px-1.6,py-1.6,3.2,3.2,st.color);
+      g.appendChild(post);
+    });
+  }
+
+  // label: area for closed zones, length for fences
+  const c=st.open
+    ?{x:z.pts.reduce((t,p)=>t+p.x,0)/z.pts.length,y:z.pts.reduce((t,p)=>t+p.y,0)/z.pts.length}
+    :polyCentroid(z.pts);
+  let lbl=null;
+  if(st.open){
+    const len=polyLen(z.pts);
+    if(len*view.ppm>60)lbl=st.label.toUpperCase()+" · "+Math.round(len)+" m"+(z.h?" · "+z.h+" m high":"");
+  }else{
+    const area=polyArea(z.pts);
+    if(Math.sqrt(area)*view.ppm>46){
+      lbl=st.label.toUpperCase()+" · "+(area<10?area.toFixed(1):Math.round(area))+" m²";
+      if(z.type==="boundary")lbl+=" · "+Math.round(polyPerim(z.pts))+" m";
+      if(z.type==="structure"&&z.h)lbl+=" · "+z.h+" m roof";
+    }
+  }
+  if(lbl){
+    const t=text(toScreenX(c.x),toScreenY(c.y)-(st.open?8:0),lbl,st.color,9);
     t.setAttribute("font-family",MONO);t.setAttribute("letter-spacing",".08em");
     t.setAttribute("stroke",C.paper);t.setAttribute("stroke-width","3");t.setAttribute("paint-order","stroke");
     g.appendChild(t);
@@ -1029,8 +1479,9 @@ function drawZone(z,zi){
     });
     r.addEventListener("contextmenu",e=>{
       e.preventDefault();e.stopPropagation();
-      if(z.pts.length>3){snapshot();z.pts.splice(vi,1);render();saveSoon();}
-      else toast("A zone needs at least 3 corners — right-click the solid handle to delete it");
+      const minPts=st.open?2:3;
+      if(z.pts.length>minPts){snapshot();z.pts.splice(vi,1);render();saveSoon();}
+      else toast("Too few corners left — right-click the solid handle to delete the whole thing");
     });
     svg.appendChild(r);
   });
@@ -1095,26 +1546,32 @@ function drawDrawingPreview(){
     t.setAttribute("stroke",C.paper);t.setAttribute("stroke-width","3");t.setAttribute("paint-order","stroke");
     g.appendChild(t);
   }
-  // close target on first vertex
-  const p0=drawing[0];
-  const cc=document.createElementNS(SVGNS,"circle");
-  cc.setAttribute("cx",toScreenX(p0.x));cc.setAttribute("cy",toScreenY(p0.y));
-  cc.setAttribute("r",drawing.length>=3?7:4);
-  cc.setAttribute("fill",drawing.length>=3?C.paper:st.color);
-  cc.setAttribute("stroke",st.color);cc.setAttribute("stroke-width","1.5");
-  g.appendChild(cc);
+  // close target on first vertex (closed shapes only — fences finish with Enter/double-click)
+  if(!st.open){
+    const p0=drawing[0];
+    const cc=document.createElementNS(SVGNS,"circle");
+    cc.setAttribute("cx",toScreenX(p0.x));cc.setAttribute("cy",toScreenY(p0.y));
+    cc.setAttribute("r",drawing.length>=3?7:4);
+    cc.setAttribute("fill",drawing.length>=3?C.paper:st.color);
+    cc.setAttribute("stroke",st.color);cc.setAttribute("stroke-width","1.5");
+    g.appendChild(cc);
+  }
   svg.appendChild(g);
 }
 
 function finishDrawing(){
-  if(drawing&&drawing.length>=3){
+  const st=ZS[drawType];
+  const min=st&&st.open?2:3;
+  if(drawing&&drawing.length>=min){
     snapshot();
     const z={type:drawType,pts:drawing};
     if(drawType==="structure")z.h=4;
+    if(drawType==="fence")z.h=1.8;
     zones.push(z);
-    const st=ZS[drawType];
-    toast(st.label+" added — "+Math.round(polyArea(drawing))+" m²");
-    if(drawType==="structure")openHDialog(zones.length-1);
+    toast(st.label+" added — "+(st.open
+      ?Math.round(polyLen(drawing))+" m"
+      :Math.round(polyArea(drawing))+" m²"));
+    if(drawType==="structure"||drawType==="fence")openHDialog(zones.length-1);
   }
   drawing=null;render();saveSoon();
 }
@@ -1384,11 +1841,15 @@ function updateReadout(){
   const area=plants.reduce((s,p)=>s+Math.PI*(p.spread/2)**2,0);
   let html=`<b>${plants.length}</b> plants · canopy <b>${area.toFixed(0)} m²</b><br>mode <b>${mode}</b>`;
   if(zones.length){
-    const totals={};
-    zones.forEach(z=>{totals[z.type]=(totals[z.type]||0)+polyArea(z.pts);});
+    const totals={};let fenceLen=0;
+    zones.forEach(z=>{
+      if(ZS[z.type]&&ZS[z.type].open)fenceLen+=polyLen(z.pts);
+      else totals[z.type]=(totals[z.type]||0)+polyArea(z.pts);
+    });
     const parts=Object.entries(totals).map(([k,a])=>
-      `${k==="boundary"?"block":ZS[k].label} <b>${Math.round(a)}</b>`);
-    html+=`<br>${parts.join(" · ")} m²`;
+      `${k==="boundary"?"block":ZS[k].label} <b>${Math.round(a)}</b>m²`);
+    if(fenceLen)parts.push(`fence <b>${Math.round(fenceLen)}</b>m`);
+    if(parts.length)html+=`<br>${parts.join(" · ")}`;
   }
   if(underlay)html+=`<br>underlay 1px = <b>${(underlay.mpp*100).toFixed(1)} cm</b>`;
   document.getElementById("readout").innerHTML=html;
@@ -1408,11 +1869,22 @@ function text(x,y,str,fill,size){const t=document.createElementNS(SVGNS,"text");
 function fmt(d){return d>=10?d.toFixed(1):d.toFixed(2);}
 
 /* ================================================================ export */
-function exportPNG(){
+async function exportPNG(){
   const W=svg.clientWidth,H=svg.clientHeight;
   const clone=svg.cloneNode(true);
   clone.setAttribute("xmlns",SVGNS);
   clone.setAttribute("width",W);clone.setAttribute("height",H);
+  // inline live map tiles so the rasteriser can see them
+  const ext=[...clone.querySelectorAll("image")].filter(im=>(im.getAttribute("href")||"").startsWith("http"));
+  if(ext.length)toast("Fetching map tiles for export…");
+  await Promise.all(ext.map(async im=>{
+    try{
+      const b=await fetch(im.getAttribute("href"),{mode:"cors"}).then(r=>{
+        if(!r.ok)throw 0;return r.blob();});
+      const du=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(b);});
+      im.setAttribute("href",du);
+    }catch(e){im.remove();}          // tile unavailable → paper shows through
+  }));
   const blob=new Blob([new XMLSerializer().serializeToString(clone)],{type:"image/svg+xml"});
   const url=URL.createObjectURL(blob);
   const img=new Image();
@@ -1511,8 +1983,8 @@ svg.addEventListener("pointerup",e=>{
       if(drag.type==="plant"){         // …it was a click: toggle selection
         selected=selected===drag.i?null:drag.i;
         render();
-      }else if(drag.type==="zone"&&zones[drag.zi]&&zones[drag.zi].type==="structure"){
-        openHDialog(drag.zi);          // click house handle → set roof height
+      }else if(drag.type==="zone"&&zones[drag.zi]&&(zones[drag.zi].type==="structure"||zones[drag.zi].type==="fence")){
+        openHDialog(drag.zi);          // click house/fence handle → set its height
       }
     }
     updateHistoryButtons();saveSoon();
@@ -1548,7 +2020,7 @@ svg.addEventListener("pointerup",e=>{
     else{
       const p0=drawing[0];
       const closeDist=Math.hypot(toScreenX(p0.x)-e.clientX,toScreenY(p0.y)-e.clientY);
-      if(drawing.length>=3&&closeDist<12){finishDrawing();return;}
+      if(!ZS[drawType].open&&drawing.length>=3&&closeDist<12){finishDrawing();return;}
       drawing.push({x:px,y:py});
     }
     render();
@@ -1556,7 +2028,8 @@ svg.addEventListener("pointerup",e=>{
 });
 
 svg.addEventListener("dblclick",e=>{
-  if(mode==="draw"&&drawing&&drawing.length>=4){
+  const min=(ZS[drawType]&&ZS[drawType].open)?3:4;
+  if(mode==="draw"&&drawing&&drawing.length>=min){
     drawing.pop();               // second click of the double-click
     finishDrawing();
   }
@@ -1580,9 +2053,11 @@ window.addEventListener("keydown",e=>{
     if(drawing){drawing=null;render();return;}   // cancel polygon, stay in draw mode
     if(selected!==null){selected=null;render();return;}
     pending=null;pendingCal=null;pendingSlope=null;
-    hideCalDialog();hideSlopeDialog();hideHDialog();setMode("plant");return;
+    hideCalDialog();hideSlopeDialog();hideHDialog();
+    document.getElementById("fileDialog").style.display="none";
+    setMode("plant");return;
   }
-  if(e.key==="Enter"&&mode==="draw"&&drawing&&drawing.length>=3){finishDrawing();return;}
+  if(e.key==="Enter"&&mode==="draw"&&drawing&&drawing.length>=((ZS[drawType]&&ZS[drawType].open)?2:3)){finishDrawing();return;}
   if(typing)return;
   if((e.key==="Delete"||e.key==="Backspace")&&selected!==null&&mode==="plant"){
     snapshot();
@@ -1617,6 +2092,7 @@ if(!load()){
 buildPalette();
 buildZoneRow();
 syncSunUI();
+syncMapUI();
 render();
 
 if("serviceWorker" in navigator&&location.protocol.startsWith("http")){

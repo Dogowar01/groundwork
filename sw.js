@@ -10,8 +10,10 @@
    Bump CACHE to retire old caches on the next visit.
    ============================================================ */
 "use strict";
-const CACHE = "groundwork-v3";
+const CACHE = "groundwork-v4";
+const TILE_CACHE = "groundwork-tiles-v1";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
+const TILE_HOSTS = ["services.thelist.tas.gov.au", "server.arcgisonline.com"];
 
 self.addEventListener("install", e => {
   self.skipWaiting();
@@ -25,7 +27,7 @@ self.addEventListener("install", e => {
 self.addEventListener("activate", e => {
   e.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)));
+    await Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE).map(k => caches.delete(k)));
     await self.clients.claim();
   })());
 });
@@ -53,6 +55,23 @@ self.addEventListener("fetch", e => {
         return fresh;
       } catch {
         return (await caches.match("./index.html")) || Response.error();
+      }
+    })());
+    return;
+  }
+
+  if (TILE_HOSTS.includes(url.hostname)) {
+    // map tiles: cache-first — revisit your block offline
+    e.respondWith((async () => {
+      const c = await caches.open(TILE_CACHE);
+      const cached = await c.match(req);
+      if (cached) return cached;
+      try {
+        const fresh = await fetch(req);
+        c.put(req, fresh.clone());
+        return fresh;
+      } catch {
+        return Response.error();
       }
     })());
     return;
