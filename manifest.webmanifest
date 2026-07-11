@@ -1,0 +1,20 @@
+{
+  "name": "Groundwork — Signal9 Apps",
+  "short_name": "Groundwork",
+  "description": "A true-to-scale garden site planner — every plant drawn at its real mature spread.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5efe0",
+  "theme_color": "#f5efe0",
+  "categories": ["productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Groundwork — canopy circle on drafting paper -->
+  <rect width="512" height="512" rx="96" fill="#f5efe0"/>
+  <g stroke="#ddd2b8" stroke-width="4">
+    <line x1="128" y1="48" x2="128" y2="464"/>
+    <line x1="256" y1="48" x2="256" y2="464"/>
+    <line x1="384" y1="48" x2="384" y2="464"/>
+    <line x1="48" y1="128" x2="464" y2="128"/>
+    <line x1="48" y1="256" x2="464" y2="256"/>
+    <line x1="48" y1="384" x2="464" y2="384"/>
+  </g>
+  <circle cx="256" cy="256" r="150" fill="#6f9a74" fill-opacity=".3" stroke="#557a5c" stroke-width="12"/>
+  <line x1="256" y1="256" x2="362" y2="150" stroke="#557a5c" stroke-width="8" opacity=".6"/>
+  <circle cx="256" cy="256" r="18" fill="#557a5c"/>
+  <path d="M 256 88 l 14 34 -14 -9 -14 9 z" fill="#9c5b33"/>
+</svg>

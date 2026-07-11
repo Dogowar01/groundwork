@@ -1,0 +1,966 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="theme-color" content="#f5efe0">
+<meta name="description" content="Groundwork — a true-to-scale garden site planner. Every plant drawn at its real mature spread.">
+<title>Groundwork — site planner</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5efe0;
+    --paper-edge:#ded2b6;
+    --panel:#efe8d6;
+    --ink:#322d24;
+    --ink-soft:#786d59;
+    --grid:#ddd2b8;
+    --grid-major:#c9ba93;
+    --accent:#9c5b33;
+    --accent-deep:#7a4526;
+    --measure:#b0502a;
+    --panel-w:242px;
+    --serif:"Fraunces","Iowan Old Style",Georgia,serif;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    font-family:var(--serif);
+    color:var(--ink);
+    background:var(--paper);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  #stage{position:fixed;inset:0}
+  svg{display:block;width:100%;height:100%;cursor:crosshair;touch-action:none}
+  ::selection{background:rgba(156,91,51,.25)}
+
+  /* ================= left palette ================= */
+  #palette{
+    position:fixed;top:0;left:0;bottom:0;width:var(--panel-w);
+    background:var(--panel);
+    border-right:1px solid var(--paper-edge);
+    box-shadow:2px 0 14px rgba(60,50,30,.07);
+    padding:18px 15px 12px;
+    display:flex;flex-direction:column;
+    transition:transform .28s cubic-bezier(.4,0,.2,1);
+    z-index:20;
+  }
+  .wordmark{
+    font-family:var(--mono);font-size:13px;font-weight:500;
+    letter-spacing:.34em;text-transform:uppercase;color:var(--ink);
+    margin:0;
+  }
+  .wordmark .dot{color:var(--accent)}
+  #palette .sub{
+    font-size:11.5px;font-style:italic;color:var(--ink-soft);
+    margin:3px 0 12px;letter-spacing:.02em;
+  }
+  #planTitle{
+    width:100%;font-family:var(--serif);font-style:italic;font-size:15px;
+    color:var(--ink);background:transparent;
+    border:none;border-bottom:1px solid var(--paper-edge);
+    padding:2px 1px 5px;margin-bottom:12px;outline:none;
+  }
+  #planTitle:focus{border-bottom-color:var(--accent)}
+  #planTitle::placeholder{color:var(--ink-soft);opacity:.6}
+  #search{
+    width:100%;padding:7px 9px;margin-bottom:6px;
+    font-family:var(--mono);font-size:11px;color:var(--ink);
+    background:rgba(255,255,255,.45);
+    border:1px solid var(--paper-edge);border-radius:7px;outline:none;
+  }
+  #search:focus{border-color:var(--accent)}
+  #search::placeholder{color:var(--ink-soft);opacity:.7}
+  #plantList{flex:1;overflow-y:auto;margin:0 -7px;padding:0 7px;scrollbar-width:thin;scrollbar-color:var(--grid-major) transparent}
+  .cat{
+    font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--accent-deep);margin:13px 2px 5px;font-weight:500;
+    display:flex;align-items:center;gap:7px;
+  }
+  .cat::after{content:"";flex:1;height:1px;background:var(--paper-edge)}
+  .plant{
+    display:flex;align-items:center;gap:10px;
+    padding:5px 8px;border-radius:7px;cursor:pointer;
+    border:1px solid transparent;
+  }
+  .plant:hover{background:rgba(156,91,51,.07)}
+  .plant.active{background:rgba(156,91,51,.13);border-color:rgba(156,91,51,.4)}
+  .swatch{
+    border-radius:50%;flex:0 0 auto;
+    border:1.2px solid;position:relative;
+  }
+  .swatch::after{
+    content:"";position:absolute;inset:0;margin:auto;
+    width:3px;height:3px;border-radius:50%;background:inherit;
+    filter:brightness(.6);
+  }
+  .plant .nm{font-size:12.5px;line-height:1.15}
+  .plant .sp{font-family:var(--mono);font-size:9px;color:var(--ink-soft);letter-spacing:.03em}
+  .plant .sp i{font-family:var(--serif);font-size:10px;letter-spacing:0}
+  .hint{
+    padding-top:10px;font-size:10.5px;color:var(--ink-soft);line-height:1.5;
+    border-top:1px solid var(--paper-edge);margin-top:8px;font-style:italic;
+  }
+  .hint b{color:var(--ink);font-weight:600;font-style:normal}
+  .hint kbd{
+    font-family:var(--mono);font-style:normal;font-size:9px;
+    background:rgba(255,255,255,.5);border:1px solid var(--paper-edge);
+    border-radius:3px;padding:0 4px;color:var(--ink);
+  }
+
+  /* ================= toolbar ================= */
+  #toolbar{
+    position:fixed;top:14px;left:calc(50% + var(--panel-w)/2);transform:translateX(-50%);
+    display:flex;align-items:center;gap:2px;
+    background:var(--panel);
+    border:1px solid var(--paper-edge);border-radius:10px;
+    padding:5px 6px;box-shadow:0 3px 14px rgba(60,50,30,.1);
+    font-family:var(--mono);font-size:11px;
+    z-index:15;max-width:calc(100vw - var(--panel-w) - 32px);flex-wrap:wrap;justify-content:center;
+  }
+  #toolbar button{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--ink);
+    background:transparent;border:1px solid transparent;border-radius:7px;
+    padding:5px 9px;cursor:pointer;display:flex;align-items:center;gap:5px;
+  }
+  #toolbar button svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+  #toolbar button:hover{background:rgba(156,91,51,.08)}
+  #toolbar button.active{background:rgba(156,91,51,.15);border-color:rgba(156,91,51,.45);color:var(--accent-deep)}
+  #toolbar button:disabled{opacity:.35;cursor:default}
+  #toolbar button:disabled:hover{background:transparent}
+  #toolbar .sep{width:1px;height:20px;background:var(--paper-edge);margin:0 4px}
+  #toolbar label{color:var(--ink-soft);display:flex;align-items:center;gap:5px;font-size:10px;letter-spacing:.04em}
+  #toolbar input[type=number]{
+    width:42px;font-family:var(--mono);font-size:11px;padding:2px 4px;
+    border:1px solid var(--paper-edge);border-radius:5px;background:rgba(255,255,255,.5);
+    color:var(--ink);outline:none;
+  }
+  #toolbar input[type=range]{width:64px;accent-color:var(--accent)}
+  #opacityWrap{display:none}
+
+  #paletteToggle{
+    display:none;position:fixed;top:14px;left:12px;z-index:30;
+    background:var(--panel);border:1px solid var(--paper-edge);border-radius:9px;
+    padding:7px 9px;cursor:pointer;box-shadow:0 3px 12px rgba(60,50,30,.12);
+  }
+  #paletteToggle svg{width:15px;height:15px;stroke:var(--ink);fill:none;stroke-width:1.8;stroke-linecap:round;display:block}
+
+  /* ================= readout / toast / dialog ================= */
+  #readout{
+    position:fixed;top:16px;right:16px;
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;color:var(--ink-soft);
+    text-align:right;background:rgba(245,239,224,.8);backdrop-filter:blur(3px);
+    padding:7px 11px;border-radius:7px;pointer-events:none;line-height:1.7;
+    border:1px solid rgba(222,210,182,.6);z-index:10;
+  }
+  #readout b{color:var(--ink);font-weight:500}
+  #toast{
+    position:fixed;bottom:26px;left:calc(50% + var(--panel-w)/2);transform:translateX(-50%);
+    background:var(--ink);color:var(--paper);
+    font-family:var(--mono);font-size:11px;letter-spacing:.04em;
+    padding:9px 18px;border-radius:8px;opacity:0;transition:opacity .3s;
+    pointer-events:none;max-width:70vw;text-align:center;z-index:40;line-height:1.5;
+  }
+  #calDialog{
+    position:fixed;top:50%;left:calc(50% + var(--panel-w)/2);transform:translate(-50%,-50%);
+    background:var(--panel);border:1px solid var(--paper-edge);border-radius:12px;
+    box-shadow:0 12px 44px rgba(50,45,36,.28);
+    padding:20px 22px;width:312px;display:none;font-size:13px;z-index:50;
+  }
+  #calDialog h2{
+    font-family:var(--mono);font-size:10px;margin:0 0 12px;
+    text-transform:uppercase;letter-spacing:.22em;color:var(--accent-deep);font-weight:500;
+  }
+  #calDialog .row{display:flex;align-items:center;justify-content:space-between;margin:9px 0;gap:8px}
+  #calDialog .row span{font-size:13px}
+  #calDialog input{
+    width:78px;font-family:var(--mono);font-size:13px;padding:5px 7px;
+    border:1px solid var(--paper-edge);border-radius:6px;background:rgba(255,255,255,.55);
+    color:var(--ink);outline:none;text-align:right;
+  }
+  #calDialog input:focus{border-color:var(--accent)}
+  #calDialog .note{font-size:11.5px;font-style:italic;color:var(--ink-soft);line-height:1.5;margin:12px 0 4px}
+  #calDialog .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+  #calDialog .btns button{
+    font-family:var(--mono);font-size:11px;letter-spacing:.05em;
+    padding:6px 15px;border-radius:7px;cursor:pointer;
+    border:1px solid var(--paper-edge);background:transparent;color:var(--ink);
+  }
+  #calDialog .btns button.primary{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+  #calDialog .btns button.primary:hover{background:var(--accent-deep)}
+
+  /* ================= mobile ================= */
+  @media (max-width:760px){
+    :root{--panel-w:0px}
+    #palette{transform:translateX(-100%);width:262px}
+    #palette.open{transform:translateX(0)}
+    #paletteToggle{display:block}
+    #toolbar{top:auto;bottom:14px;max-width:calc(100vw - 20px)}
+    #readout{display:none}
+    #toast{bottom:76px}
+  }
+</style>
+</head>
+<body>
+  <button id="paletteToggle" title="Plant palette" aria-label="Toggle plant palette">
+    <svg viewBox="0 0 24 24"><path d="M12 21c0-6 0-9 0-9m0 0c0-4 3-7 8-7 0 5-3 8-8 7zm0 0C12 8 9 5 4 5c0 5 3 8 8 7z"/></svg>
+  </button>
+
+  <div id="palette">
+    <h1 class="wordmark">Ground<span class="dot">·</span>work</h1>
+    <p class="sub">true-to-scale site planner</p>
+    <input id="planTitle" type="text" placeholder="Untitled plan" spellcheck="false" autocomplete="off">
+    <input id="search" type="text" placeholder="search plants…" spellcheck="false" autocomplete="off">
+    <div id="plantList"></div>
+    <div class="hint">
+      <b>Click</b> to plant · drag to move · right-click removes ·
+      scroll zooms · drag ground pans.<br>
+      <kbd>Ctrl</kbd>+<kbd>V</kbd> pastes an aerial photo, then <b>Calibrate</b>
+      two ends of a known length. Circles are <b>real mature spread</b> —
+      overlaps are future crowding.
+    </div>
+  </div>
+
+  <div id="toolbar">
+    <button data-mode="plant" class="active" title="Plant — click the paper to place (P)">
+      <svg viewBox="0 0 24 24"><path d="M12 21v-8m0 0c0-4 3-7 8-7 0 5-3 8-8 7zm0 0C12 8 9 5 4 5c0 5 3 8 8 7z"/></svg>plant</button>
+    <button data-mode="measure" title="Measure — click two points (M)">
+      <svg viewBox="0 0 24 24"><path d="M3 17 17 3l4 4L7 21zm4-6 2 2m1-5 2 2m1-5 2 2"/></svg>measure</button>
+    <button data-mode="calibrate" title="Calibrate — set the scale from a known length (C)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>calibrate</button>
+    <div class="sep"></div>
+    <button id="loadBtn" title="Load an aerial image (or just Ctrl+V a screenshot)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 3 3 4-4 4 4"/></svg>aerial</button>
+    <label id="opacityWrap"><input id="opacity" type="range" min="10" max="100" value="75" title="Underlay opacity"></label>
+    <label title="Ground slope — measurements also report true along-ground distance">slope°<input id="slope" type="number" min="0" max="45" step="1" value="0"></label>
+    <div class="sep"></div>
+    <button id="undoBtn" title="Undo (Ctrl+Z)" disabled>
+      <svg viewBox="0 0 24 24"><path d="M8 5 3 10l5 5M3 10h11a6 6 0 0 1 0 12h-3"/></svg></button>
+    <button id="redoBtn" title="Redo (Ctrl+Y)" disabled>
+      <svg viewBox="0 0 24 24"><path d="m16 5 5 5-5 5m5-5H10a6 6 0 0 0 0 12h3"/></svg></button>
+    <div class="sep"></div>
+    <button id="zoomOut" title="Zoom out"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+    <button id="zoomIn" title="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button id="exportBtn" title="Export the plan as a PNG">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg></button>
+  </div>
+
+  <div id="readout"></div>
+  <div id="toast"></div>
+
+  <div id="calDialog">
+    <h2>Set scale</h2>
+    <div class="row"><span>True length of that line</span><span><input id="calLen" type="number" min="0.1" step="0.1"> m</span></div>
+    <div class="row"><span>Ground slope along it</span><span><input id="calSlope" type="number" min="0" max="45" step="1" value="0"> °</span></div>
+    <div class="note">If the length was tape-measured on sloping ground, the aerial shows it foreshortened: plan = length × cos(slope). Leave 0° if flat, or if the length comes from a title plan or map scale bar.</div>
+    <div class="btns">
+      <button id="calCancel">cancel</button>
+      <button id="calApply" class="primary">apply scale</button>
+    </div>
+  </div>
+
+  <div id="stage"><svg id="svg"></svg></div>
+
+<script>
+"use strict";
+const SVGNS="http://www.w3.org/2000/svg";
+const svg=document.getElementById("svg");
+
+/* literal colours — the SVG must survive serialisation for PNG export */
+const C={
+  paper:"#f5efe0", grid:"#ddd2b8", gridMajor:"#c9ba93",
+  ink:"#322d24", inkSoft:"#786d59",
+  accent:"#9c5b33", accentDeep:"#7a4526", measure:"#b0502a",
+};
+const MONO="'IBM Plex Mono',ui-monospace,monospace";
+const SERIF="'Fraunces','Iowan Old Style',Georgia,serif";
+
+/* ================================================================
+   Plant catalogue — Tamar Valley / northern Tasmania (cool temperate)
+   spread = realistic mature canopy spread in metres
+================================================================ */
+const CATALOGUE=[
+  {cat:"Native trees", name:"Cider gum",            bot:"Eucalyptus gunnii",        spread:6,   hue:"#6f9a74"},
+  {cat:"Native trees", name:"Snow gum",             bot:"Eucalyptus pauciflora",    spread:5,   hue:"#7ba283"},
+  {cat:"Native trees", name:"Blackwood",            bot:"Acacia melanoxylon",       spread:8,   hue:"#5c8a5f"},
+  {cat:"Native trees", name:"Silver wattle",        bot:"Acacia dealbata",          spread:6,   hue:"#8fae66"},
+  {cat:"Native trees", name:"Myrtle beech",         bot:"Nothofagus cunninghamii",  spread:6,   hue:"#4f7d58"},
+  {cat:"Native trees", name:"Soft tree fern",       bot:"Dicksonia antarctica",     spread:3,   hue:"#57905c"},
+  {cat:"Native trees", name:"Woolly tea-tree",      bot:"Leptospermum lanigerum",   spread:3,   hue:"#87a37e"},
+  {cat:"Native trees", name:"Silver banksia",       bot:"Banksia marginata",        spread:3,   hue:"#9aa25e"},
+  {cat:"Native trees", name:"Mountain pepper",      bot:"Tasmannia lanceolata",     spread:2,   hue:"#6b8f4e"},
+
+  {cat:"Native shrubs & grasses", name:"White correa",      bot:"Correa alba",            spread:1.5, hue:"#9db089"},
+  {cat:"Native shrubs & grasses", name:"Native fuchsia",    bot:"Correa reflexa",         spread:1,   hue:"#a8845e"},
+  {cat:"Native shrubs & grasses", name:"Royal grevillea",   bot:"Grevillea victoriae",    spread:2.5, hue:"#b07a4a"},
+  {cat:"Native shrubs & grasses", name:"Lemon bottlebrush", bot:"Callistemon pallidus",   spread:2.5, hue:"#a8a95c"},
+  {cat:"Native shrubs & grasses", name:"Coastal rosemary",  bot:"Westringia fruticosa",   spread:1.5, hue:"#8aa0a6"},
+  {cat:"Native shrubs & grasses", name:"Sagg / lomandra",   bot:"Lomandra longifolia",    spread:1,   hue:"#7f9b52"},
+  {cat:"Native shrubs & grasses", name:"Tasman flax-lily",  bot:"Dianella tasmanica",     spread:0.8, hue:"#6a8fa0"},
+  {cat:"Native shrubs & grasses", name:"Silver tussock",    bot:"Poa labillardierei",     spread:0.9, hue:"#a9ab84"},
+  {cat:"Native shrubs & grasses", name:"Creeping boobialla",bot:"Myoporum parvifolium",   spread:2,   hue:"#7ea56b"},
+
+  {cat:"Exotic & feature trees", name:"Silver birch",     bot:"Betula pendula",          spread:4,  hue:"#8fae6b"},
+  {cat:"Exotic & feature trees", name:"Japanese maple",   bot:"Acer palmatum",           spread:4,  hue:"#b07048"},
+  {cat:"Exotic & feature trees", name:"Manchurian pear",  bot:"Pyrus ussuriensis",       spread:5,  hue:"#7fa25c"},
+  {cat:"Exotic & feature trees", name:"Ornamental pear 'Capital'", bot:"Pyrus calleryana",spread:3, hue:"#86a868"},
+  {cat:"Exotic & feature trees", name:"Crab apple",       bot:"Malus ioensis",           spread:4,  hue:"#a58a5a"},
+  {cat:"Exotic & feature trees", name:"Claret ash",       bot:"Fraxinus 'Raywood'",      spread:7,  hue:"#8d6a55"},
+  {cat:"Exotic & feature trees", name:"Liquidambar",      bot:"L. styraciflua",          spread:8,  hue:"#a2653f"},
+  {cat:"Exotic & feature trees", name:"Saucer magnolia",  bot:"Magnolia × soulangeana",  spread:4,  hue:"#b58ea0"},
+  {cat:"Exotic & feature trees", name:"Flowering dogwood",bot:"Cornus florida",          spread:4,  hue:"#c09a7c"},
+  {cat:"Exotic & feature trees", name:"Crepe myrtle",     bot:"Lagerstroemia indica",    spread:3,  hue:"#b57f8e"},
+  {cat:"Exotic & feature trees", name:"Weeping cherry",   bot:"Prunus pendula",          spread:4,  hue:"#c48ba4"},
+  {cat:"Exotic & feature trees", name:"Ginkgo",           bot:"Ginkgo biloba",           spread:6,  hue:"#a9b45f"},
+
+  {cat:"Fruit & productive", name:"Apple",          bot:"on M26 rootstock",   spread:4,   hue:"#93b25a"},
+  {cat:"Fruit & productive", name:"Pear",           bot:"Pyrus communis",     spread:4,   hue:"#9cb069"},
+  {cat:"Fruit & productive", name:"Sweet cherry",   bot:"Prunus avium",       spread:5,   hue:"#a06258"},
+  {cat:"Fruit & productive", name:"Plum",           bot:"Prunus domestica",   spread:4,   hue:"#8a6f8e"},
+  {cat:"Fruit & productive", name:"Meyer lemon",    bot:"needs shelter here", spread:2.5, hue:"#b8b04e"},
+  {cat:"Fruit & productive", name:"Feijoa",         bot:"Acca sellowiana",    spread:3,   hue:"#7f9f7d"},
+  {cat:"Fruit & productive", name:"Fig",            bot:"Ficus carica",       spread:5,   hue:"#87975a"},
+  {cat:"Fruit & productive", name:"Olive",          bot:"Olea europaea",      spread:5,   hue:"#9aa878"},
+  {cat:"Fruit & productive", name:"Hazelnut",       bot:"Corylus avellana",   spread:4,   hue:"#96854f"},
+  {cat:"Fruit & productive", name:"Walnut",         bot:"Juglans regia",      spread:10,  hue:"#7d8455"},
+  {cat:"Fruit & productive", name:"Blueberry",      bot:"Vaccinium",          spread:1.2, hue:"#6d7fa3"},
+  {cat:"Fruit & productive", name:"Raspberry clump",bot:"Rubus idaeus",       spread:1,   hue:"#a5586a"},
+
+  {cat:"Shrubs & hedging", name:"Camellia sasanqua",  bot:"",                     spread:2.5, hue:"#7f9a6a"},
+  {cat:"Shrubs & hedging", name:"Rhododendron",       bot:"",                     spread:3,   hue:"#8e6f92"},
+  {cat:"Shrubs & hedging", name:"Azalea",             bot:"",                     spread:1.2, hue:"#b0788c"},
+  {cat:"Shrubs & hedging", name:"Buxus ball",         bot:"Buxus sempervirens",   spread:1,   hue:"#6f8f5f"},
+  {cat:"Shrubs & hedging", name:"Pittosporum 'Silver Sheen'", bot:"hedging",      spread:2,   hue:"#93a894"},
+  {cat:"Shrubs & hedging", name:"Viburnum tinus",     bot:"hedging",              spread:2.5, hue:"#6e8c6b"},
+  {cat:"Shrubs & hedging", name:"Photinia 'Red Robin'",bot:"hedging",             spread:3,   hue:"#95634c"},
+  {cat:"Shrubs & hedging", name:"Escallonia",         bot:"",                     spread:2,   hue:"#9d7a72"},
+  {cat:"Shrubs & hedging", name:"Hydrangea",          bot:"",                     spread:1.5, hue:"#7d8fb0"},
+  {cat:"Shrubs & hedging", name:"English lavender",   bot:"Lavandula angustifolia",spread:0.8,hue:"#9b8fb0"},
+  {cat:"Shrubs & hedging", name:"Rosemary",           bot:"",                     spread:1,   hue:"#8aa0a6"},
+  {cat:"Shrubs & hedging", name:"Hebe",               bot:"",                     spread:1.2, hue:"#7f9c95"},
+
+  {cat:"Perennials & groundcover", name:"Salvia 'Hot Lips'",  bot:"",                     spread:1,   hue:"#ab6070"},
+  {cat:"Perennials & groundcover", name:"Euphorbia wulfenii", bot:"",                     spread:1.2, hue:"#a3ad60"},
+  {cat:"Perennials & groundcover", name:"Miscanthus",         bot:"ornamental grass",     spread:1.2, hue:"#b3a370"},
+  {cat:"Perennials & groundcover", name:"Blue fescue",        bot:"Festuca glauca",       spread:0.4, hue:"#8fa3ad"},
+  {cat:"Perennials & groundcover", name:"Wind grass",         bot:"Anemanthele lessoniana",spread:0.9,hue:"#b09a5e"},
+  {cat:"Perennials & groundcover", name:"Seaside daisy",      bot:"Erigeron karvinskianus",spread:0.6,hue:"#b0a2a8"},
+];
+
+/* ================================================================ state */
+const view={ox:300, oy:130, ppm:26};
+let plants=[];
+let measurements=[];
+let underlay=null;
+let mode="plant";
+let pending=null;
+let pendingCal=null;
+let lastPtr=null;
+let planTitle="";
+let active=CATALOGUE.find(p=>p.name==="Silver birch");
+
+const toScreenX=mx=>view.ox+mx*view.ppm;
+const toScreenY=my=>view.oy+my*view.ppm;
+const toWorldX=sx=>(sx-view.ox)/view.ppm;
+const toWorldY=sy=>(sy-view.oy)/view.ppm;
+const rad=d=>d*Math.PI/180;
+
+/* ================================================================ history */
+let history=[],future=[];
+function snapshot(){
+  history.push(JSON.stringify({plants,measurements}));
+  if(history.length>60)history.shift();
+  future=[];updateHistoryButtons();
+}
+function restore(str){
+  const d=JSON.parse(str);plants=d.plants;measurements=d.measurements;
+  render();saveSoon();
+}
+function undo(){
+  if(!history.length)return;
+  future.push(JSON.stringify({plants,measurements}));
+  restore(history.pop());updateHistoryButtons();
+}
+function redo(){
+  if(!future.length)return;
+  history.push(JSON.stringify({plants,measurements}));
+  restore(future.pop());updateHistoryButtons();
+}
+function updateHistoryButtons(){
+  document.getElementById("undoBtn").disabled=!history.length;
+  document.getElementById("redoBtn").disabled=!future.length;
+}
+
+/* ================================================================ persistence */
+const SAVE_KEY="groundwork.v1";
+const OLD_KEY="siteplan.pinetree.v1";
+let saveTimer=null;
+function saveSoon(){clearTimeout(saveTimer);saveTimer=setTimeout(save,600);}
+function save(){
+  const data={plants,measurements,view,planTitle,underlay:underlay?{...underlay}:null};
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(data));}
+  catch(e){
+    if(data.underlay)data.underlay={...data.underlay,dataURL:null};
+    try{localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e2){}
+  }
+}
+function load(){
+  try{
+    let raw=localStorage.getItem(SAVE_KEY);
+    if(!raw&&localStorage.getItem(OLD_KEY)){       // migrate from the first version
+      raw=localStorage.getItem(OLD_KEY);
+      localStorage.removeItem(OLD_KEY);
+    }
+    const d=JSON.parse(raw);
+    if(!d)return false;
+    plants=d.plants||[];measurements=d.measurements||[];
+    Object.assign(view,d.view||{});
+    planTitle=d.planTitle||"";
+    document.getElementById("planTitle").value=planTitle;
+    if(d.underlay&&d.underlay.dataURL){underlay=d.underlay;showOpacity();}
+    else if(d.underlay)toast("Underlay image was too large to keep — paste it again (scale is remembered)");
+    return true;
+  }catch(e){return false;}
+}
+
+/* ================================================================ palette */
+const list=document.getElementById("plantList");
+function buildPalette(filter=""){
+  list.innerHTML="";
+  const cats=[...new Set(CATALOGUE.map(p=>p.cat))];
+  cats.forEach(cat=>{
+    const items=CATALOGUE.filter(p=>p.cat===cat&&
+      (p.name+" "+(p.bot||"")).toLowerCase().includes(filter));
+    if(!items.length)return;
+    const h=document.createElement("div");h.className="cat";h.textContent=cat;
+    list.appendChild(h);
+    items.forEach(p=>{
+      const el=document.createElement("div");
+      el.className="plant"+(p===active?" active":"");
+      const d=Math.max(9,Math.min(24,5+p.spread*2.4));
+      el.innerHTML=`<span class="swatch" style="background:${p.hue}33;border-color:${p.hue};width:${d}px;height:${d}px"></span>
+        <span><span class="nm">${p.name}</span><br><span class="sp">${p.spread} m${p.bot?" · <i>"+p.bot+"</i>":""}</span></span>`;
+      el.onclick=()=>{
+        active=p;setMode("plant");
+        buildPalette(document.getElementById("search").value.toLowerCase());
+        if(window.innerWidth<=760)document.getElementById("palette").classList.remove("open");
+      };
+      list.appendChild(el);
+    });
+  });
+}
+document.getElementById("search").addEventListener("input",e=>buildPalette(e.target.value.toLowerCase()));
+document.getElementById("planTitle").addEventListener("input",e=>{planTitle=e.target.value;render();saveSoon();});
+document.getElementById("paletteToggle").onclick=()=>document.getElementById("palette").classList.toggle("open");
+
+/* ================================================================ toolbar */
+function setMode(m){
+  mode=m;pending=null;pendingCal=null;hideCalDialog();
+  document.querySelectorAll("#toolbar button[data-mode]").forEach(b=>
+    b.classList.toggle("active",b.dataset.mode===m));
+  if(m==="calibrate"&&!underlay)toast("Load or paste an aerial image first, then calibrate");
+  if(m==="calibrate"&&underlay)toast("Click the two ends of something whose length you know — a fence, a wall, or the map's scale bar");
+  if(m==="measure")toast("Click two points to measure · right-click clears measurements");
+  render();
+}
+document.querySelectorAll("#toolbar button[data-mode]").forEach(b=>
+  b.onclick=()=>setMode(b.dataset.mode));
+document.getElementById("loadBtn").onclick=()=>{
+  const inp=document.createElement("input");
+  inp.type="file";inp.accept="image/*";
+  inp.onchange=()=>{if(inp.files[0])loadUnderlayFile(inp.files[0]);};
+  inp.click();
+};
+document.getElementById("opacity").oninput=e=>{
+  if(underlay){underlay.opacity=e.target.value/100;render();saveSoon();}
+};
+function showOpacity(){document.getElementById("opacityWrap").style.display="flex";}
+document.getElementById("undoBtn").onclick=undo;
+document.getElementById("redoBtn").onclick=redo;
+function zoomAt(sx,sy,factor){
+  const mx=toWorldX(sx),my=toWorldY(sy);
+  view.ppm=Math.max(2,Math.min(300,view.ppm*factor));
+  view.ox=sx-mx*view.ppm;view.oy=sy-my*view.ppm;
+  render();saveSoon();
+}
+document.getElementById("zoomIn").onclick=()=>zoomAt(svg.clientWidth/2,svg.clientHeight/2,1.25);
+document.getElementById("zoomOut").onclick=()=>zoomAt(svg.clientWidth/2,svg.clientHeight/2,1/1.25);
+document.getElementById("exportBtn").onclick=exportPNG;
+
+/* ================================================================ underlay */
+function loadUnderlayFile(file){
+  const r=new FileReader();
+  r.onload=()=>loadUnderlayDataURL(r.result);
+  r.readAsDataURL(file);
+}
+function loadUnderlayDataURL(url){
+  const img=new Image();
+  img.onload=()=>{
+    const mpp=(underlay&&underlay.mpp&&underlay.imgW===img.naturalWidth)?underlay.mpp:40/img.naturalWidth;
+    const panelW=window.innerWidth>760?242:0;
+    const cx=toWorldX((svg.clientWidth+panelW)/2),cy=toWorldY(svg.clientHeight/2);
+    underlay={dataURL:url,imgW:img.naturalWidth,imgH:img.naturalHeight,
+      mpp,x:cx-img.naturalWidth*mpp/2,y:cy-img.naturalHeight*mpp/2,
+      opacity:document.getElementById("opacity").value/100};
+    showOpacity();
+    render();saveSoon();
+    toast("Underlay loaded — now hit calibrate and click two ends of a known length");
+  };
+  img.src=url;
+}
+window.addEventListener("paste",e=>{
+  for(const item of e.clipboardData.items){
+    if(item.type.startsWith("image/")){loadUnderlayFile(item.getAsFile());e.preventDefault();return;}
+  }
+});
+window.addEventListener("dragover",e=>e.preventDefault());
+window.addEventListener("drop",e=>{
+  e.preventDefault();
+  const f=[...e.dataTransfer.files].find(f=>f.type.startsWith("image/"));
+  if(f)loadUnderlayFile(f);
+});
+
+/* ================================================================ calibration */
+const calDialog=document.getElementById("calDialog");
+function openCalDialog(p1,p2){
+  pendingCal=[p1,p2];
+  document.getElementById("calSlope").value=document.getElementById("slope").value||0;
+  calDialog.style.display="block";
+  document.getElementById("calLen").focus();
+}
+function hideCalDialog(){calDialog.style.display="none";}
+document.getElementById("calCancel").onclick=()=>{pendingCal=null;hideCalDialog();render();};
+document.getElementById("calApply").onclick=applyCalibration;
+document.getElementById("calLen").addEventListener("keydown",e=>{if(e.key==="Enter")applyCalibration();});
+function applyCalibration(){
+  const L=parseFloat(document.getElementById("calLen").value);
+  const s=parseFloat(document.getElementById("calSlope").value)||0;
+  if(!pendingCal||!underlay||!(L>0)){toast("Enter the true length in metres");return;}
+  const [p1,p2]=pendingCal;
+  const dWorld=Math.hypot(p2.x-p1.x,p2.y-p1.y);
+  const planLen=L*Math.cos(rad(s));
+  const factor=planLen/dWorld;
+  underlay.x=p1.x-(p1.x-underlay.x)*factor;
+  underlay.y=p1.y-(p1.y-underlay.y)*factor;
+  underlay.mpp*=factor;
+  pendingCal=null;hideCalDialog();setMode("plant");saveSoon();
+  toast(`Scale set — that line is ${planLen.toFixed(2)} m on plan`+(s?` (${L} m along ${s}° ground)`:``));
+}
+
+/* ================================================================ render */
+function render(){
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  const W=svg.clientWidth,H=svg.clientHeight;
+  svg.appendChild(rect(0,0,W,H,C.paper));
+
+  if(underlay){
+    const im=document.createElementNS(SVGNS,"image");
+    im.setAttribute("href",underlay.dataURL);
+    im.setAttribute("x",toScreenX(underlay.x));
+    im.setAttribute("y",toScreenY(underlay.y));
+    im.setAttribute("width",underlay.imgW*underlay.mpp*view.ppm);
+    im.setAttribute("height",underlay.imgH*underlay.mpp*view.ppm);
+    im.setAttribute("opacity",underlay.opacity);
+    im.setAttribute("preserveAspectRatio","none");
+    svg.appendChild(im);
+  }
+
+  drawGrid(W,H);
+  drawOrigin();
+  if(!plants.length&&!underlay)drawEmptyState(W,H);
+  plants.forEach((p,i)=>drawPlant(p,i));
+  measurements.forEach(m=>drawMeasure(m));
+  drawPending();
+  drawGhost();
+  drawTitleBlock(W,H);
+  updateReadout();
+}
+
+function drawGrid(W,H){
+  const g=document.createElementNS(SVGNS,"g");
+  g.setAttribute("opacity",underlay?0.5:1);
+  for(let m=Math.floor(toWorldX(0));m<=Math.ceil(toWorldX(W));m++){
+    const x=toScreenX(m),major=m%5===0;
+    g.appendChild(line(x,0,x,H,major?C.gridMajor:C.grid,major?1:.5));
+  }
+  for(let m=Math.floor(toWorldY(0));m<=Math.ceil(toWorldY(H));m++){
+    const y=toScreenY(m),major=m%5===0;
+    g.appendChild(line(0,y,W,y,major?C.gridMajor:C.grid,major?1:.5));
+  }
+  svg.appendChild(g);
+}
+
+function drawOrigin(){
+  const g=document.createElementNS(SVGNS,"g");
+  const x0=toScreenX(0),y0=toScreenY(0);
+  g.appendChild(line(x0-8,y0,x0+8,y0,C.accent,1));
+  g.appendChild(line(x0,y0-8,x0,y0+8,C.accent,1));
+  svg.appendChild(g);
+}
+
+function drawEmptyState(W,H){
+  const g=document.createElementNS(SVGNS,"g");
+  const cx=W/2+(window.innerWidth>760?60:0),cy=H/2-10;
+  const t1=text(cx,cy,"Paste an aerial of your block  ( Ctrl + V )",C.inkSoft,15);
+  t1.setAttribute("font-family",SERIF);t1.setAttribute("font-style","italic");
+  const t2=text(cx,cy+26,"— or choose a plant and click the paper —",C.inkSoft,13);
+  t2.setAttribute("font-family",SERIF);t2.setAttribute("font-style","italic");
+  t2.setAttribute("opacity",".75");
+  g.appendChild(t1);g.appendChild(t2);
+  svg.appendChild(g);
+}
+
+function drawPlant(p,i){
+  const g=document.createElementNS(SVGNS,"g");
+  g.style.cursor=mode==="plant"?"grab":"crosshair";
+  const cx=toScreenX(p.x),cy=toScreenY(p.y),r=(p.spread/2)*view.ppm;
+
+  const c=document.createElementNS(SVGNS,"circle");
+  c.setAttribute("cx",cx);c.setAttribute("cy",cy);c.setAttribute("r",r);
+  c.setAttribute("fill",p.hue);c.setAttribute("fill-opacity",underlay?".32":".22");
+  c.setAttribute("stroke",p.hue);c.setAttribute("stroke-width","1.3");
+  g.appendChild(c);
+
+  // landscape-plan symbol: centre dot + one radius tick
+  const a=rad(-45);
+  const tick=line(cx,cy,cx+r*Math.cos(a),cy+r*Math.sin(a),p.hue,.8);
+  tick.setAttribute("opacity",".55");
+  g.appendChild(tick);
+  const dot=document.createElementNS(SVGNS,"circle");
+  dot.setAttribute("cx",cx);dot.setAttribute("cy",cy);dot.setAttribute("r","2.1");
+  dot.setAttribute("fill",p.hue);
+  g.appendChild(dot);
+
+  if(r>18){
+    const t=text(cx,cy+r+13,p.name.toUpperCase(),C.inkSoft,9);
+    t.setAttribute("font-family",MONO);
+    t.setAttribute("letter-spacing",".08em");
+    t.setAttribute("stroke",C.paper);t.setAttribute("stroke-width","3");t.setAttribute("paint-order","stroke");
+    g.appendChild(t);
+  }
+
+  g.addEventListener("pointerdown",e=>{
+    if(mode!=="plant")return;
+    if(e.button===2)return;
+    e.stopPropagation();
+    snapshot();
+    drag={type:"plant",i,dx:toScreenX(p.x)-e.clientX,dy:toScreenY(p.y)-e.clientY,moved:false};
+    svg.setPointerCapture(e.pointerId);
+  });
+  g.addEventListener("contextmenu",e=>{
+    e.preventDefault();
+    if(mode==="plant"){snapshot();plants.splice(i,1);render();saveSoon();}
+  });
+  svg.appendChild(g);
+}
+
+function drawMeasureLine(g,x1,y1,x2,y2,label){
+  g.appendChild(line(x1,y1,x2,y2,C.measure,1.3));
+  const a=Math.atan2(y2-y1,x2-x1)+Math.PI/2;
+  [[x1,y1],[x2,y2]].forEach(([x,y])=>{
+    g.appendChild(line(x-5*Math.cos(a),y-5*Math.sin(a),x+5*Math.cos(a),y+5*Math.sin(a),C.measure,1.3));
+  });
+  if(label){
+    const t=text((x1+x2)/2,(y1+y2)/2-9,label,C.measure,10);
+    t.setAttribute("font-family",MONO);
+    t.setAttribute("letter-spacing",".04em");
+    t.setAttribute("stroke",C.paper);t.setAttribute("stroke-width","3.5");t.setAttribute("paint-order","stroke");
+    g.appendChild(t);
+  }
+}
+
+function drawMeasure(m){
+  const g=document.createElementNS(SVGNS,"g");
+  const plan=Math.hypot(m.bx-m.ax,m.by-m.ay);
+  let label=fmt(plan)+" m";
+  if(m.slope>0)label+=`  ·  ${fmt(plan/Math.cos(rad(m.slope)))} m @ ${m.slope}°`;
+  drawMeasureLine(g,toScreenX(m.ax),toScreenY(m.ay),toScreenX(m.bx),toScreenY(m.by),label);
+  svg.appendChild(g);
+}
+
+function drawPending(){
+  if(pendingCal){
+    const g2=document.createElementNS(SVGNS,"g");
+    drawMeasureLine(g2,toScreenX(pendingCal[0].x),toScreenY(pendingCal[0].y),
+      toScreenX(pendingCal[1].x),toScreenY(pendingCal[1].y),"known length?");
+    svg.appendChild(g2);
+    return;
+  }
+  if(!pending||!lastPtr)return;
+  const g=document.createElementNS(SVGNS,"g");
+  const x1=toScreenX(pending.x),y1=toScreenY(pending.y);
+  const plan=Math.hypot(toWorldX(lastPtr.x)-pending.x,toWorldY(lastPtr.y)-pending.y);
+  drawMeasureLine(g,x1,y1,lastPtr.x,lastPtr.y,mode==="measure"?fmt(plan)+" m":null);
+  svg.appendChild(g);
+}
+
+/* ghost of the active plant's mature spread under the cursor */
+function drawGhost(){
+  if(mode!=="plant"||!lastPtr||drag)return;
+  const r=(active.spread/2)*view.ppm;
+  const g=document.createElementNS(SVGNS,"g");
+  g.setAttribute("pointer-events","none");
+  const c=document.createElementNS(SVGNS,"circle");
+  c.setAttribute("cx",lastPtr.x);c.setAttribute("cy",lastPtr.y);c.setAttribute("r",r);
+  c.setAttribute("fill",active.hue);c.setAttribute("fill-opacity",".08");
+  c.setAttribute("stroke",active.hue);c.setAttribute("stroke-width","1.1");
+  c.setAttribute("stroke-dasharray","5 4");
+  g.appendChild(c);
+  if(r>14){
+    const t=text(lastPtr.x,lastPtr.y-r-7,`${active.name.toUpperCase()} · ${active.spread} m`,C.inkSoft,8.5);
+    t.setAttribute("font-family",MONO);t.setAttribute("letter-spacing",".07em");
+    t.setAttribute("stroke",C.paper);t.setAttribute("stroke-width","3");t.setAttribute("paint-order","stroke");
+    g.appendChild(t);
+  }
+  svg.appendChild(g);
+}
+
+/* ---- architect's title block, bottom-right ---- */
+function drawTitleBlock(W,H){
+  if(W<540)return;
+  const bw=238,bh=104,m=14;
+  const x=W-bw-m,y=H-bh-m;
+  const g=document.createElementNS(SVGNS,"g");
+
+  const box=rect(x,y,bw,bh,C.paper);
+  box.setAttribute("stroke",C.ink);box.setAttribute("stroke-width","1.2");
+  g.appendChild(box);
+  const inner=rect(x+3.5,y+3.5,bw-7,bh-7,"none");
+  inner.setAttribute("stroke",C.gridMajor);inner.setAttribute("stroke-width",".6");
+  g.appendChild(inner);
+
+  const pad=13;
+  // row 1 — wordmark
+  const t1=text(x+pad,y+22,"GROUND·WORK",C.ink,9.5);
+  t1.setAttribute("text-anchor","start");t1.setAttribute("font-family",MONO);
+  t1.setAttribute("letter-spacing",".3em");t1.setAttribute("font-weight","500");
+  g.appendChild(t1);
+  const t1b=text(x+bw-pad,y+22,"SIGNAL9",C.inkSoft,7);
+  t1b.setAttribute("text-anchor","end");t1b.setAttribute("font-family",MONO);
+  t1b.setAttribute("letter-spacing",".22em");
+  g.appendChild(t1b);
+
+  // row 2 — plan title
+  const title=planTitle.trim()||"Untitled plan";
+  const t2=text(x+pad,y+43,title,C.ink,14);
+  t2.setAttribute("text-anchor","start");t2.setAttribute("font-family",SERIF);
+  t2.setAttribute("font-style","italic");
+  g.appendChild(t2);
+
+  g.appendChild(line(x+pad,y+53,x+bw-pad,y+53,C.gridMajor,.7));
+
+  // row 3 — scale bar + north arrow
+  const targets=[100,50,20,10,5,2,1,0.5];
+  const sm=targets.find(t=>t*view.ppm<=118)||0.5;
+  const spx=sm*view.ppm,sy=y+72;
+  g.appendChild(line(x+pad,sy,x+pad+spx,sy,C.ink,1.3));
+  g.appendChild(line(x+pad,sy-4,x+pad,sy+4,C.ink,1.3));
+  g.appendChild(line(x+pad+spx,sy-4,x+pad+spx,sy+4,C.ink,1.3));
+  g.appendChild(line(x+pad+spx/2,sy-2.5,x+pad+spx/2,sy+2.5,C.ink,.8));
+  const ts=text(x+pad+spx/2,sy-8,(sm<1?sm*100+" cm":sm+" m"),C.ink,8.5);
+  ts.setAttribute("font-family",MONO);ts.setAttribute("letter-spacing",".06em");
+  g.appendChild(ts);
+
+  // north arrow
+  const nx=x+bw-pad-13,ny=y+72;
+  const nc=document.createElementNS(SVGNS,"circle");
+  nc.setAttribute("cx",nx);nc.setAttribute("cy",ny);nc.setAttribute("r","11");
+  nc.setAttribute("fill","none");nc.setAttribute("stroke",C.ink);nc.setAttribute("stroke-width",".9");
+  g.appendChild(nc);
+  const arrow=document.createElementNS(SVGNS,"path");
+  arrow.setAttribute("d",`M ${nx} ${ny-8} L ${nx+3} ${ny+5} L ${nx} ${ny+2.5} L ${nx-3} ${ny+5} Z`);
+  arrow.setAttribute("fill",C.ink);
+  g.appendChild(arrow);
+  const tn=text(nx,ny-15,"N",C.ink,8);
+  tn.setAttribute("font-family",MONO);
+  g.appendChild(tn);
+
+  // row 4 — date + ratio
+  const now=new Date();
+  const months=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const t4=text(x+pad,y+bh-12,months[now.getMonth()]+" "+now.getFullYear(),C.inkSoft,8);
+  t4.setAttribute("text-anchor","start");t4.setAttribute("font-family",MONO);t4.setAttribute("letter-spacing",".14em");
+  g.appendChild(t4);
+  const ratio=Math.round(3779.5/view.ppm/5)*5||5;
+  const t4b=text(x+bw-pad,y+bh-12,"≈ 1:"+ratio,C.inkSoft,8);
+  t4b.setAttribute("text-anchor","end");t4b.setAttribute("font-family",MONO);t4b.setAttribute("letter-spacing",".1em");
+  g.appendChild(t4b);
+
+  svg.appendChild(g);
+}
+
+function updateReadout(){
+  const area=plants.reduce((s,p)=>s+Math.PI*(p.spread/2)**2,0);
+  let html=`<b>${plants.length}</b> plants · canopy <b>${area.toFixed(0)} m²</b><br>mode <b>${mode}</b>`;
+  if(underlay)html+=`<br>underlay 1px = <b>${(underlay.mpp*100).toFixed(1)} cm</b>`;
+  document.getElementById("readout").innerHTML=html;
+}
+
+/* ---- svg helpers ---- */
+function rect(x,y,w,h,fill){const r=document.createElementNS(SVGNS,"rect");
+  r.setAttribute("x",x);r.setAttribute("y",y);r.setAttribute("width",w);r.setAttribute("height",h);
+  r.setAttribute("fill",fill);return r;}
+function line(x1,y1,x2,y2,stroke,w){const l=document.createElementNS(SVGNS,"line");
+  l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);
+  l.setAttribute("stroke",stroke);l.setAttribute("stroke-width",w);return l;}
+function text(x,y,str,fill,size){const t=document.createElementNS(SVGNS,"text");
+  t.setAttribute("x",x);t.setAttribute("y",y);t.setAttribute("text-anchor","middle");
+  t.setAttribute("font-size",size);t.setAttribute("fill",fill);
+  t.textContent=str;return t;}
+function fmt(d){return d>=10?d.toFixed(1):d.toFixed(2);}
+
+/* ================================================================ export */
+function exportPNG(){
+  const W=svg.clientWidth,H=svg.clientHeight;
+  const clone=svg.cloneNode(true);
+  clone.setAttribute("xmlns",SVGNS);
+  clone.setAttribute("width",W);clone.setAttribute("height",H);
+  const blob=new Blob([new XMLSerializer().serializeToString(clone)],{type:"image/svg+xml"});
+  const url=URL.createObjectURL(blob);
+  const img=new Image();
+  img.onload=()=>{
+    const cv=document.createElement("canvas");
+    cv.width=W*2;cv.height=H*2;
+    const ctx=cv.getContext("2d");
+    ctx.scale(2,2);ctx.drawImage(img,0,0);
+    URL.revokeObjectURL(url);
+    cv.toBlob(b=>{
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(b);
+      a.download=(planTitle.trim()||"groundwork-plan").toLowerCase().replace(/[^a-z0-9]+/g,"-")+".png";
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    },"image/png");
+    toast("Plan exported as PNG");
+  };
+  img.onerror=()=>{URL.revokeObjectURL(url);toast("Export failed — try again");};
+  img.src=url;
+}
+
+/* ================================================================ interaction */
+let drag=null;
+const ptrs=new Map();
+let pinch=null;
+
+svg.addEventListener("pointerdown",e=>{
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2){
+    drag=null;
+    const [a,b]=[...ptrs.values()];
+    pinch={d0:Math.hypot(b.x-a.x,b.y-a.y),ppm0:view.ppm,
+      wx:toWorldX((a.x+b.x)/2),wy:toWorldY((a.y+b.y)/2)};
+    return;
+  }
+  if(e.button!==0)return;
+  drag={type:"pan",x:e.clientX,y:e.clientY,ox:view.ox,oy:view.oy,moved:false};
+  svg.setPointerCapture(e.pointerId);
+});
+
+svg.addEventListener("pointermove",e=>{
+  if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  lastPtr={x:e.clientX,y:e.clientY};
+  if(pinch&&ptrs.size===2){
+    const [a,b]=[...ptrs.values()];
+    const d=Math.hypot(b.x-a.x,b.y-a.y);
+    view.ppm=Math.max(2,Math.min(300,pinch.ppm0*d/pinch.d0));
+    const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    view.ox=mx-pinch.wx*view.ppm;view.oy=my-pinch.wy*view.ppm;
+    render();return;
+  }
+  if(drag){
+    if(drag.type==="pan"){
+      if(Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y)>3)drag.moved=true;
+      if(drag.moved){view.ox=drag.ox+(e.clientX-drag.x);view.oy=drag.oy+(e.clientY-drag.y);render();}
+    }else if(drag.type==="plant"){
+      drag.moved=true;
+      plants[drag.i].x=toWorldX(e.clientX+drag.dx);
+      plants[drag.i].y=toWorldY(e.clientY+drag.dy);
+      render();
+    }
+  }else{render();}          // ghost follows cursor
+});
+
+svg.addEventListener("pointerleave",()=>{lastPtr=null;render();});
+
+svg.addEventListener("pointerup",e=>{
+  ptrs.delete(e.pointerId);
+  if(pinch){if(ptrs.size<2)pinch=null;saveSoon();return;}
+  const wasClick=drag&&drag.type==="pan"&&!drag.moved;
+  if(drag&&drag.type==="plant"){
+    if(!drag.moved)history.pop();      // drag never moved — drop its snapshot
+    updateHistoryButtons();saveSoon();
+  }
+  drag=null;
+  if(!wasClick){if(drag===null)saveSoon();return;}
+  const wx=toWorldX(e.clientX),wy=toWorldY(e.clientY);
+  if(mode==="plant"){
+    snapshot();
+    plants.push({x:wx,y:wy,name:active.name,spread:active.spread,hue:active.hue});
+    render();saveSoon();
+  }else if(mode==="measure"){
+    if(!pending)pending={x:wx,y:wy};
+    else{snapshot();measurements.push({ax:pending.x,ay:pending.y,bx:wx,by:wy,
+      slope:parseFloat(document.getElementById("slope").value)||0});pending=null;saveSoon();}
+    render();
+  }else if(mode==="calibrate"){
+    if(!underlay){toast("Paste or load an aerial image first");return;}
+    if(!pending)pending={x:wx,y:wy};
+    else{openCalDialog(pending,{x:wx,y:wy});pending=null;}
+    render();
+  }
+});
+
+svg.addEventListener("pointercancel",e=>{ptrs.delete(e.pointerId);pinch=null;drag=null;});
+
+svg.addEventListener("contextmenu",e=>{
+  e.preventDefault();
+  if(mode==="measure"&&measurements.length){snapshot();measurements=[];render();saveSoon();toast("Measurements cleared");}
+});
+
+svg.addEventListener("wheel",e=>{
+  e.preventDefault();
+  zoomAt(e.clientX,e.clientY,e.deltaY<0?1.1:1/1.1);
+},{passive:false});
+
+window.addEventListener("keydown",e=>{
+  const typing=/^(INPUT|TEXTAREA)$/.test(e.target.tagName);
+  if(e.key==="Escape"){pending=null;pendingCal=null;hideCalDialog();setMode("plant");return;}
+  if(typing)return;
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==="z"){e.preventDefault();undo();return;}
+  if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==="y"||(e.shiftKey&&e.key.toLowerCase()==="z"))){e.preventDefault();redo();return;}
+  if(e.key==="p")setMode("plant");
+  if(e.key==="m")setMode("measure");
+  if(e.key==="c")setMode("calibrate");
+});
+window.addEventListener("resize",render);
+
+/* ================================================================ toast */
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.style.opacity=1;
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.style.opacity=0,4200);
+}
+
+/* ================================================================ init */
+if(!load()){
+  const seed=n=>{const p=CATALOGUE.find(c=>c.name===n);return{name:p.name,spread:p.spread,hue:p.hue};};
+  plants.push({x:3,y:4,...seed("Silver birch")});
+  plants.push({x:7,y:5,...seed("Camellia sasanqua")});
+}
+buildPalette();
+render();
+
+if("serviceWorker" in navigator&&location.protocol.startsWith("http")){
+  addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+}
+</script>
+</body>
+</html>
