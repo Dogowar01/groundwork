@@ -547,7 +547,13 @@
 
 <script>
 "use strict";
-const APP_VERSION="6";
+const APP_VERSION="7";
+// surface script errors instead of failing silently — helps diagnose "button does nothing"
+window.addEventListener("error",e=>{
+  const t=document.getElementById("toast");
+  if(t){t.textContent="⚠ error: "+(e.message||"script error")+" — try the update button";
+    t.classList.add("on");setTimeout(()=>t.classList.remove("on"),8000);}
+});
 const SVGNS="http://www.w3.org/2000/svg";
 const svg=document.getElementById("svg");
 
