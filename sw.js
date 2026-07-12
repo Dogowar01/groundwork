@@ -10,16 +10,18 @@
    Bump CACHE to retire old caches on the next visit.
    ============================================================ */
 "use strict";
-const CACHE = "groundwork-v8";
+const CACHE = "groundwork-v9";
 const TILE_CACHE = "groundwork-tiles-v1";
-const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
+const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg",
+  "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 const TILE_HOSTS = ["services.thelist.tas.gov.au", "server.arcgisonline.com"];
 
 self.addEventListener("install", e => {
   self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE).then(c => Promise.all(
-      SHELL.map(u => c.add(u).catch(() => {/* tolerate a missing shell entry */}))
+      // cache:"reload" bypasses the HTTP cache so a version bump ships fresh files
+      SHELL.map(u => c.add(new Request(u, { cache: "reload" })).catch(() => {/* tolerate a missing shell entry */}))
     ))
   );
 });
