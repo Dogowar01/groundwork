@@ -10,7 +10,7 @@
    Bump CACHE to retire old caches on the next visit.
    ============================================================ */
 "use strict";
-const CACHE = "groundwork-v5";
+const CACHE = "groundwork-v6";
 const TILE_CACHE = "groundwork-tiles-v1";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
 const TILE_HOSTS = ["services.thelist.tas.gov.au", "server.arcgisonline.com"];

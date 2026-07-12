@@ -423,6 +423,10 @@
       <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg>png</button>
     <button id="fileBtn" title="Plan file — backup, restore, plant schedule">
       <svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>file</button>
+    <button id="newBtn" title="New plan — start a fresh sheet (offers a backup first)">
+      <svg viewBox="0 0 24 24"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10zm0 0v7h7M9 15h6m-3-3v6"/></svg>new</button>
+    <button id="updateBtn" title="Update — fetch the latest version of Groundwork (your plan is kept)">
+      <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 3v5h-5"/></svg>update</button>
     <div class="zoneRow" id="mapRow">
       <input id="addr" type="text" placeholder="address or place… (Enter to search)" spellcheck="false" autocomplete="off">
       <button id="addrGo">search</button>
@@ -486,6 +490,16 @@
     </div>
   </div>
 
+  <div id="newDialog" class="dlg">
+    <h2>New plan</h2>
+    <div class="note" style="margin-top:0">This clears the whole plan from this browser — plants, zones, underlay, map anchor, the lot. Download a backup first if you might want it back.</div>
+    <div class="btns" style="justify-content:flex-start;flex-wrap:wrap">
+      <button id="newBackup" class="primary">backup, then new plan</button>
+      <button id="newNow">new plan, no backup</button>
+      <button id="newCancel">cancel</button>
+    </div>
+  </div>
+
   <div id="fileDialog" class="dlg">
     <h2>Plan file &amp; schedule</h2>
     <div class="btns" style="justify-content:flex-start;flex-wrap:wrap;margin-top:0">
@@ -493,7 +507,7 @@
       <button id="impJson">import plan…</button>
       <button id="expCsv">schedule (.csv)</button>
     </div>
-    <div class="note" style="margin:8px 0 0">The plan lives in this browser's storage — export a .json now and then as a backup you can re-import anywhere.</div>
+    <div class="note" style="margin:8px 0 0" id="fileNote">The plan lives in this browser's storage — export a .json now and then as a backup you can re-import anywhere.</div>
     <div id="schedule"></div>
     <div class="btns"><button id="fileClose">close</button></div>
   </div>
@@ -533,6 +547,7 @@
 
 <script>
 "use strict";
+const APP_VERSION="6";
 const SVGNS="http://www.w3.org/2000/svg";
 const svg=document.getElementById("svg");
 
@@ -1263,7 +1278,12 @@ function downloadBlob(blob,name){
   setTimeout(()=>URL.revokeObjectURL(a.href),4000);
 }
 const planSlug=()=>(planTitle.trim()||"groundwork-plan").toLowerCase().replace(/[^a-z0-9]+/g,"-");
-document.getElementById("fileBtn").onclick=()=>{buildSchedule();fileDialog.style.display="block";};
+document.getElementById("fileBtn").onclick=()=>{
+  buildSchedule();
+  document.getElementById("fileNote").textContent=
+    `Groundwork rev ${APP_VERSION} — the plan lives in this browser's storage; export a .json now and then as a backup you can re-import anywhere.`;
+  fileDialog.style.display="block";
+};
 document.getElementById("fileClose").onclick=()=>fileDialog.style.display="none";
 document.getElementById("expJson").onclick=()=>{
   downloadBlob(new Blob([JSON.stringify(planData())],{type:"application/json"}),planSlug()+".json");
@@ -1299,6 +1319,43 @@ document.getElementById("impJson").onclick=()=>{
   };
   inp.click();
 };
+/* ---- new plan ---- */
+const newDialog=document.getElementById("newDialog");
+function hideNewDialog(){newDialog.style.display="none";}
+function newPlan(backup){
+  if(backup)document.getElementById("expJson").click();   // download current state first
+  plants=[];zones=[];slopes=[];measurements=[];underlay=null;
+  basemap={on:false,lat0:null,lon0:null};
+  sun={on:false,season:"winter",time:12,lat:-41.4,mode:"moment"};
+  planTitle="";document.getElementById("planTitle").value="";
+  history=[];future=[];selected=null;pending=null;pendingCal=null;pendingSlope=null;drawing=null;heatCache=null;
+  view.ox=300;view.oy=130;view.ppm=26;
+  localStorage.removeItem("groundwork.start.dismissed");
+  updateHistoryButtons();syncSunUI();syncMapUI();hideNewDialog();setMode("plant");
+  save();render();
+  toast(backup?"Fresh sheet — backup downloaded first":"Fresh sheet");
+}
+document.getElementById("newBtn").onclick=()=>{newDialog.style.display="block";};
+document.getElementById("newCancel").onclick=hideNewDialog;
+document.getElementById("newBackup").onclick=()=>newPlan(true);
+document.getElementById("newNow").onclick=()=>newPlan(false);
+
+/* ---- update: drop app caches + SW, refetch from the network ---- */
+document.getElementById("updateBtn").onclick=async()=>{
+  toast("Fetching the latest version — your plan is kept…");
+  try{
+    if("serviceWorker" in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+    }
+    if(window.caches){
+      const keys=await caches.keys();
+      await Promise.all(keys.filter(k=>!k.includes("tiles")).map(k=>caches.delete(k)));
+    }
+  }catch(e){}
+  setTimeout(()=>location.reload(),400);
+};
+
 document.getElementById("expCsv").onclick=()=>{
   const rows=scheduleRows();
   if(!rows.length){toast("No plants to schedule yet");return;}
@@ -1964,7 +2021,7 @@ function drawTitleBlock(W,H){
   // row 4 — date + ratio
   const now=new Date();
   const months=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
-  const t4=text(x+pad,y+bh-12,months[now.getMonth()]+" "+now.getFullYear(),C.inkSoft,8);
+  const t4=text(x+pad,y+bh-12,months[now.getMonth()]+" "+now.getFullYear()+" · R"+APP_VERSION,C.inkSoft,8);
   t4.setAttribute("text-anchor","start");t4.setAttribute("font-family",MONO);t4.setAttribute("letter-spacing",".14em");
   g.appendChild(t4);
   const ratio=Math.round(3779.5/view.ppm/5)*5||5;
@@ -2191,7 +2248,7 @@ window.addEventListener("keydown",e=>{
     if(drawing){drawing=null;render();return;}   // cancel polygon, stay in draw mode
     if(selected!==null){selected=null;render();return;}
     pending=null;pendingCal=null;pendingSlope=null;
-    hideCalDialog();hideSlopeDialog();hideHDialog();
+    hideCalDialog();hideSlopeDialog();hideHDialog();hideNewDialog();
     document.getElementById("fileDialog").style.display="none";
     setMode("plant");return;
   }
