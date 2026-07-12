@@ -45,7 +45,7 @@
     position:fixed;top:0;left:0;bottom:0;width:var(--panel-w);
     background:var(--panel);
     border-right:1px solid var(--paper-edge);
-    box-shadow:2px 0 14px rgba(60,50,30,.07);
+    box-shadow:3px 0 22px rgba(60,50,30,.09);
     padding:18px 15px 12px;
     display:flex;flex-direction:column;
     transition:transform .28s cubic-bezier(.4,0,.2,1);
@@ -80,17 +80,24 @@
   #plantList{flex:1;overflow-y:auto;margin:0 -7px;padding:0 7px;scrollbar-width:thin;scrollbar-color:var(--grid-major) transparent}
   .cat{
     font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;
-    color:var(--accent-deep);margin:13px 2px 5px;font-weight:500;
+    color:var(--accent-deep);font-weight:500;
     display:flex;align-items:center;gap:7px;
+    position:sticky;top:0;z-index:2;
+    background:var(--panel);
+    margin:0 -2px;padding:11px 2px 5px;
   }
   .cat::after{content:"";flex:1;height:1px;background:var(--paper-edge)}
   .plant{
     display:flex;align-items:center;gap:10px;
-    padding:5px 8px;border-radius:7px;cursor:pointer;
+    padding:7px 9px;border-radius:8px;cursor:pointer;
     border:1px solid transparent;
+    transition:background .12s,border-color .12s,box-shadow .12s;
   }
-  .plant:hover{background:rgba(156,91,51,.07)}
-  .plant.active{background:rgba(156,91,51,.13);border-color:rgba(156,91,51,.4)}
+  .plant:hover{background:rgba(156,91,51,.08)}
+  .plant.active{
+    background:rgba(156,91,51,.14);border-color:rgba(156,91,51,.45);
+    box-shadow:inset 3px 0 0 var(--accent);
+  }
   .swatch{
     border-radius:50%;flex:0 0 auto;
     border:1.2px solid;position:relative;
@@ -118,16 +125,17 @@
   #toolbar{
     position:fixed;top:14px;left:calc(50% + var(--panel-w)/2);transform:translateX(-50%);
     display:flex;align-items:center;gap:2px;
-    background:var(--panel);
-    border:1px solid var(--paper-edge);border-radius:10px;
-    padding:5px 6px;box-shadow:0 3px 14px rgba(60,50,30,.1);
+    background:rgba(239,232,214,.94);backdrop-filter:blur(8px);
+    border:1px solid var(--paper-edge);border-radius:12px;
+    padding:5px 7px;box-shadow:0 6px 24px rgba(60,50,30,.13);
     font-family:var(--mono);font-size:11px;
     z-index:15;max-width:calc(100vw - var(--panel-w) - 32px);flex-wrap:wrap;justify-content:center;
   }
   #toolbar button{
     font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--ink);
-    background:transparent;border:1px solid transparent;border-radius:7px;
-    padding:5px 9px;cursor:pointer;display:flex;align-items:center;gap:5px;
+    background:transparent;border:1px solid transparent;border-radius:8px;
+    padding:6px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;
+    transition:background .15s,border-color .15s,color .15s;
   }
   #toolbar button svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
   #toolbar button:hover{background:rgba(156,91,51,.08)}
@@ -149,7 +157,54 @@
     align-items:center;
   }
   .zoneRow.show{display:flex}
-  .zchip{width:9px;height:9px;border-radius:2px;border:1px solid;flex:0 0 auto}
+  .zchip{width:10px;height:10px;border-radius:2.5px;border:1px solid;flex:0 0 auto}
+
+  /* ---- status bar: always says what a click will do ---- */
+  #statusBar{
+    position:fixed;bottom:18px;left:calc(50% + var(--panel-w)/2);transform:translateX(-50%);
+    font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:var(--ink-soft);
+    background:rgba(239,232,214,.92);backdrop-filter:blur(5px);
+    border:1px solid var(--paper-edge);border-radius:20px;
+    padding:7px 17px;pointer-events:none;z-index:12;
+    white-space:nowrap;max-width:75vw;overflow:hidden;text-overflow:ellipsis;
+    box-shadow:0 3px 14px rgba(60,50,30,.09);
+  }
+  #statusBar b{color:var(--accent-deep);font-weight:500}
+
+  /* ---- start card: the empty-state front door ---- */
+  #startCard{
+    position:fixed;top:50%;left:calc(50% + var(--panel-w)/2);transform:translate(-50%,-52%);
+    width:min(350px,88vw);display:none;z-index:18;
+    background:var(--paper);border:1.2px solid var(--ink);border-radius:4px;
+    box-shadow:0 18px 60px rgba(50,45,36,.22);
+    padding:26px 26px 20px;
+  }
+  #startCard::before{
+    content:"";position:absolute;inset:5px;pointer-events:none;
+    border:.6px solid var(--grid-major);border-radius:2px;
+  }
+  #startCard h2{
+    font-family:var(--mono);font-size:12px;font-weight:500;
+    letter-spacing:.32em;text-transform:uppercase;margin:0 0 4px;
+  }
+  #startCard h2 .dot{color:var(--accent)}
+  #startCard .tag{
+    font-family:var(--serif);font-style:italic;font-size:13.5px;
+    color:var(--ink-soft);line-height:1.5;margin:0 0 18px;
+  }
+  #startCard .act{
+    display:flex;align-items:center;gap:13px;width:100%;text-align:left;
+    background:transparent;border:1px solid var(--paper-edge);border-radius:10px;
+    padding:11px 13px;margin-bottom:8px;cursor:pointer;color:var(--ink);
+    font-family:var(--serif);transition:background .15s,border-color .15s,transform .15s;
+  }
+  #startCard .act:hover{background:rgba(156,91,51,.07);border-color:rgba(156,91,51,.45);transform:translateY(-1px)}
+  #startCard .act svg{
+    width:20px;height:20px;flex:0 0 auto;stroke:var(--accent);fill:none;
+    stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;
+  }
+  #startCard .act b{font-size:14px;font-weight:600;display:block}
+  #startCard .act small{font-size:11px;color:var(--ink-soft);font-style:italic;line-height:1.35;display:block;margin-top:1px}
   #mapRow input{
     width:190px;font-family:var(--mono);font-size:11px;padding:4px 8px;
     border:1px solid var(--paper-edge);border-radius:6px;background:rgba(255,255,255,.5);
@@ -228,12 +283,16 @@
   }
   #readout b{color:var(--ink);font-weight:500}
   #toast{
-    position:fixed;bottom:26px;left:calc(50% + var(--panel-w)/2);transform:translateX(-50%);
+    position:fixed;bottom:62px;left:calc(50% + var(--panel-w)/2);
+    transform:translateX(-50%) translateY(6px);
     background:var(--ink);color:var(--paper);
     font-family:var(--mono);font-size:11px;letter-spacing:.04em;
-    padding:9px 18px;border-radius:8px;opacity:0;transition:opacity .3s;
+    padding:9px 18px;border-radius:9px;opacity:0;
+    transition:opacity .3s,transform .3s;
+    box-shadow:0 8px 26px rgba(50,45,36,.3);
     pointer-events:none;max-width:70vw;text-align:center;z-index:40;line-height:1.5;
   }
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
   .dlg{
     position:fixed;top:50%;left:calc(50% + var(--panel-w)/2);transform:translate(-50%,-50%);
     background:var(--panel);border:1px solid var(--paper-edge);border-radius:12px;
@@ -273,7 +332,13 @@
   #sunPanel h2{
     font-family:var(--mono);font-size:9px;margin:0 0 9px;
     text-transform:uppercase;letter-spacing:.24em;color:var(--accent-deep);font-weight:500;
+    display:flex;align-items:center;justify-content:space-between;
   }
+  #sunClose{
+    font-family:var(--mono);font-size:13px;line-height:1;color:var(--ink-soft);
+    background:transparent;border:none;cursor:pointer;padding:0 2px;
+  }
+  #sunClose:hover{color:var(--accent-deep)}
   .seg{display:flex;border:1px solid var(--paper-edge);border-radius:7px;overflow:hidden;margin-bottom:10px}
   .seg button{
     flex:1;font-family:var(--mono);font-size:10px;letter-spacing:.04em;
@@ -301,8 +366,9 @@
     #paletteToggle{display:block}
     #toolbar{top:auto;bottom:14px;max-width:calc(100vw - 20px)}
     #readout{display:none}
-    #toast{bottom:76px}
+    #toast{bottom:auto;top:60px}
     #sunPanel{left:12px;bottom:126px}
+    #statusBar{bottom:auto;top:14px;left:50%;max-width:calc(100vw - 110px)}
   }
 </style>
 </head>
@@ -354,9 +420,9 @@
     <button id="zoomOut" title="Zoom out"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
     <button id="zoomIn" title="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
     <button id="exportBtn" title="Export the plan as a PNG">
-      <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg></button>
+      <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg>png</button>
     <button id="fileBtn" title="Plan file — backup, restore, plant schedule">
-      <svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></button>
+      <svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>file</button>
     <div class="zoneRow" id="mapRow">
       <input id="addr" type="text" placeholder="address or place… (Enter to search)" spellcheck="false" autocomplete="off">
       <button id="addrGo">search</button>
@@ -367,9 +433,27 @@
 
   <div id="readout"></div>
   <div id="toast"></div>
+  <div id="statusBar"></div>
+
+  <div id="startCard">
+    <h2>Ground<span class="dot">·</span>work</h2>
+    <p class="tag">Plan your garden at true scale — every plant drawn at its real mature size, every shadow where it will really fall.</p>
+    <button class="act" id="scMap">
+      <svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zm0 0v14m6-12v14"/></svg>
+      <span><b>Find my block</b><small>search your address — live aerial, already to scale</small></span>
+    </button>
+    <button class="act" id="scImg">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 3 3 4-4 4 4"/></svg>
+      <span><b>Use a screenshot</b><small>load or Ctrl+V an aerial photo, then calibrate it</small></span>
+    </button>
+    <button class="act" id="scPlant">
+      <svg viewBox="0 0 24 24"><path d="M12 21v-8m0 0c0-4 3-7 8-7 0 5-3 8-8 7zm0 0C12 8 9 5 4 5c0 5 3 8 8 7z"/></svg>
+      <span><b>Just start planting</b><small>blank paper, one-metre grid</small></span>
+    </button>
+  </div>
 
   <div id="sunPanel">
-    <h2>Sun &amp; shade</h2>
+    <h2>Sun &amp; shade <button id="sunClose" title="Hide shadows" aria-label="Close sun panel">×</button></h2>
     <div class="seg" id="seasonSeg">
       <button data-season="winter" class="active">winter</button>
       <button data-season="equinox">equinox</button>
@@ -713,7 +797,9 @@ document.getElementById("loadBtn").onclick=()=>{
 document.getElementById("opacity").oninput=e=>{
   if(underlay){underlay.opacity=e.target.value/100;render();saveSoon();}
 };
-function showOpacity(){document.getElementById("opacityWrap").style.display="flex";}
+function showOpacity(){
+  document.getElementById("opacityWrap").style.display=underlay?"flex":"none";
+}
 document.getElementById("undoBtn").onclick=undo;
 document.getElementById("redoBtn").onclick=redo;
 function zoomAt(sx,sy,factor){
@@ -1062,6 +1148,9 @@ document.getElementById("sunBtn").onclick=()=>{
   sun.on=!sun.on;syncSunUI();render();saveSoon();
   if(sun.on)toast("Shadows from house roofs & tree heights — set season and time below left");
 };
+document.getElementById("sunClose").onclick=()=>{
+  sun.on=false;syncSunUI();render();saveSoon();
+};
 document.querySelectorAll("#seasonSeg button").forEach(b=>
   b.onclick=()=>{sun.season=b.dataset.season;syncSunUI();render();saveSoon();});
 document.getElementById("sunTime").addEventListener("input",e=>{
@@ -1314,7 +1403,6 @@ function render(){
 
   drawGrid(W,H);
   drawOrigin();
-  if(!plants.length&&!underlay&&!zones.length&&!basemap.on)drawEmptyState(W,H);
   zones.forEach((z,i)=>drawZone(z,i));
   drawShadows();
   drawSlopes();
@@ -1326,18 +1414,64 @@ function render(){
   drawTitleBlock(W,H);
   drawAttribution(W,H);
   positionPlantPop();
+  updateStartCard();
+  updateStatus();
+  showOpacity();
   updateReadout();
+}
+
+/* ---- empty-state start card ---- */
+function updateStartCard(){
+  const empty=!plants.length&&!zones.length&&!underlay&&!basemap.on;
+  document.getElementById("startCard").style.display=
+    (empty&&!localStorage.getItem("groundwork.start.dismissed"))?"block":"none";
+}
+
+/* ---- status bar: what will a click do right now? ---- */
+function updateStatus(){
+  const el=document.getElementById("statusBar");
+  if(document.getElementById("startCard").style.display==="block"){el.style.display="none";return;}
+  let html="";
+  if(mode==="plant"){
+    html=`planting <b>${active.name}</b> · ${active.spread} m — click the ground · click a plant to edit it`;
+  }else if(mode==="measure"){
+    html=pending?`click the second point · <b>Esc</b> cancels`
+                :`measure — click two points · right-click clears all`;
+  }else if(mode==="calibrate"){
+    html=basemap.on?`the live map is already true to scale`
+        :pending?`click the other end of the known length`
+        :`calibrate — click both ends of something whose length you know`;
+  }else if(mode==="draw"){
+    if(drawType==="slope"){
+      html=pending?`now click the <b>downhill</b> end`
+                  :`slope marker — click the uphill end, then the downhill end`;
+    }else if(drawing){
+      const st=ZS[drawType];
+      html=`<b>${drawing.length}</b> corner${drawing.length>1?"s":""} — `+
+        (st.open?`<b>Enter</b> or double-click finishes`:`click the first corner or <b>Enter</b> to close`)+
+        ` · <b>Esc</b> cancels`;
+    }else{
+      html=`drawing <b>${ZS[drawType]?ZS[drawType].label:drawType}</b> — click corners · <b>Shift</b> snaps 0.5 m · drag handles to edit`;
+    }
+  }
+  el.style.display="block";
+  el.innerHTML=html;
 }
 
 function drawGrid(W,H){
   const g=document.createElementNS(SVGNS,"g");
   g.setAttribute("opacity",(underlay||basemap.on)?0.4:1);
+  const minor=view.ppm>=10;               // hide 1 m lines when zoomed far out
   for(let m=Math.floor(toWorldX(0));m<=Math.ceil(toWorldX(W));m++){
-    const x=toScreenX(m),major=m%5===0;
+    const major=m%5===0;
+    if(!major&&!minor)continue;
+    const x=toScreenX(m);
     g.appendChild(line(x,0,x,H,major?C.gridMajor:C.grid,major?1:.5));
   }
   for(let m=Math.floor(toWorldY(0));m<=Math.ceil(toWorldY(H));m++){
-    const y=toScreenY(m),major=m%5===0;
+    const major=m%5===0;
+    if(!major&&!minor)continue;
+    const y=toScreenY(m);
     g.appendChild(line(0,y,W,y,major?C.gridMajor:C.grid,major?1:.5));
   }
   svg.appendChild(g);
@@ -1351,17 +1485,21 @@ function drawOrigin(){
   svg.appendChild(g);
 }
 
-function drawEmptyState(W,H){
-  const g=document.createElementNS(SVGNS,"g");
-  const cx=W/2+(window.innerWidth>760?60:0),cy=H/2-10;
-  const t1=text(cx,cy,"Hit map and search your address — live aerial, true to scale",C.inkSoft,15);
-  t1.setAttribute("font-family",SERIF);t1.setAttribute("font-style","italic");
-  const t2=text(cx,cy+26,"— or Ctrl + V a screenshot, or just choose a plant and click the paper —",C.inkSoft,13);
-  t2.setAttribute("font-family",SERIF);t2.setAttribute("font-style","italic");
-  t2.setAttribute("opacity",".75");
-  g.appendChild(t1);g.appendChild(t2);
-  svg.appendChild(g);
-}
+/* ---- start card actions ---- */
+document.getElementById("scMap").onclick=()=>{
+  basemap.on=true;syncMapUI();render();
+  document.getElementById("addr").focus();
+  toast("Type your address and press Enter — or hit ◎ locate");
+};
+document.getElementById("scImg").onclick=()=>{
+  document.getElementById("loadBtn").click();
+  toast("Pick an aerial image — or press Esc and just Ctrl+V a screenshot any time");
+};
+document.getElementById("scPlant").onclick=()=>{
+  localStorage.setItem("groundwork.start.dismissed","1");
+  render();
+  toast("Pick a plant on the left, then click the paper — the dashed circle is its real mature size");
+};
 
 /* ---- polygon geometry (world metres) ---- */
 function polyArea(pts){
@@ -2078,17 +2216,13 @@ window.addEventListener("resize",render);
 let toastTimer=null;
 function toast(msg){
   const t=document.getElementById("toast");
-  t.textContent=msg;t.style.opacity=1;
+  t.textContent=msg;t.classList.add("on");
   clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.style.opacity=0,4200);
+  toastTimer=setTimeout(()=>t.classList.remove("on"),4200);
 }
 
 /* ================================================================ init */
-if(!load()){
-  const seed=n=>{const p=CATALOGUE.find(c=>c.name===n);return{name:p.name,spread:p.spread,hue:p.hue};};
-  plants.push({x:3,y:4,...seed("Silver birch")});
-  plants.push({x:7,y:5,...seed("Camellia sasanqua")});
-}
+load();
 buildPalette();
 buildZoneRow();
 syncSunUI();
